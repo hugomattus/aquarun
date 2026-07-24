@@ -177,16 +177,10 @@
       <div class="flex gap-3">
         <button
           @click="showNextDetails = !showNextDetails"
-          class="flex-1 py-2.5 bg-dark hover:bg-dark/80 rounded text-sm font-medium transition-colors text-center text-neutral-300 border border-neutral-800"
+          class="w-full py-2.5 bg-dark hover:bg-dark/80 rounded text-sm font-medium transition-colors text-center text-neutral-300 border border-neutral-800"
         >
           {{ showNextDetails ? 'Fechar' : 'Ver Detalhes' }}
         </button>
-        <router-link
-          :to="`/workout/${nextWorkout.id}`"
-          class="flex-1 py-2.5 bg-primary hover:bg-primary-dark rounded text-sm font-medium transition-colors text-center"
-        >
-          Iniciar
-        </router-link>
       </div>
     </div>
 
