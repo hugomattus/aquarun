@@ -44,3 +44,8 @@ export function getActivityIcon(type) {
 export function getActivityColor(type) {
   return type === 'swim' ? '#06b6d4' : '#a855f7'
 }
+
+export function formatDateFull(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00')
+  return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })
+}

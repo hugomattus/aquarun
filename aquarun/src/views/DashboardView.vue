@@ -35,30 +35,39 @@
       </div>
     </div>
 
-    <div v-if="todayWorkout && todayWorkout.status === 'planned'" class="bg-surface rounded p-6 border border-neutral-800">
-      <div class="flex items-center gap-3 mb-4">
-        <Icon
-          :name="todayWorkout.type === 'swim' ? 'droplet' : 'activity'"
-          :size="22"
-          :class="todayWorkout.type === 'swim' ? 'text-neutral-400' : 'text-primary'"
-        />
-        <h3 class="font-medium text-white">Treino de Hoje</h3>
-      </div>
-      <div class="flex items-center gap-4 mb-4">
-        <div>
-          <div class="text-xl font-medium text-white">{{ todayWorkout.name }}</div>
-          <div class="text-sm text-neutral-500">{{ todayWorkout.duration }}min</div>
+    <div v-if="todayWorkout && todayWorkout.status === 'planned'" class="bg-surface rounded p-5 border border-neutral-800">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <Icon
+            :name="todayWorkout.type === 'swim' ? 'droplet' : 'activity'"
+            :size="18"
+            :class="todayWorkout.type === 'swim' ? 'text-neutral-400' : 'text-primary'"
+          />
+          <h3 class="text-sm font-medium text-white">Treino de Hoje</h3>
         </div>
+        <span class="text-xs text-neutral-500">{{ formatDateFull(todayWorkout.scheduled_date) }}</span>
+      </div>
+      <div class="mb-3">
+        <div class="text-lg font-medium text-white">{{ todayWorkout.name }}</div>
+        <div class="text-sm text-neutral-500">{{ todayWorkout.duration }}min</div>
       </div>
       <div v-if="todayWorkout.description" class="text-sm text-neutral-400 mb-4">
         {{ todayWorkout.description }}
       </div>
-      <router-link
-        :to="`/workout/${todayWorkout.id}`"
-        class="block w-full py-2.5 bg-primary hover:bg-primary-dark rounded font-medium transition-colors text-sm text-center"
-      >
-        Concluir Treino
-      </router-link>
+      <div class="flex gap-3">
+        <router-link
+          :to="`/workout/${todayWorkout.id}`"
+          class="flex-1 py-2.5 bg-dark hover:bg-dark/80 rounded text-sm font-medium transition-colors text-center text-neutral-300 border border-neutral-800"
+        >
+          Ver Detalhes
+        </router-link>
+        <router-link
+          :to="`/workout/${todayWorkout.id}`"
+          class="flex-1 py-2.5 bg-primary hover:bg-primary-dark rounded text-sm font-medium transition-colors text-center"
+        >
+          Concluir Treino
+        </router-link>
+      </div>
     </div>
 
     <div v-if="todayWorkout && todayWorkout.status === 'completed'" class="bg-surface rounded p-6 border border-neutral-800">
@@ -225,7 +234,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useStravaStore } from '../stores/strava'
 import { useWorkoutStore } from '../stores/workouts'
-import { formatDistance, formatDuration, formatDate } from '../utils/formatters'
+import { formatDistance, formatDuration, formatDate, formatDateFull } from '../utils/formatters'
 import Icon from '../components/Icon.vue'
 import { Line } from 'vue-chartjs'
 import {
