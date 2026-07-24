@@ -109,7 +109,7 @@
         </div>
         <span class="text-xs text-neutral-500">{{ formatShortDate(nextWorkout.scheduled_date) }}</span>
       </div>
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-4 mb-3">
         <div class="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0" :class="nextWorkout.type === 'swim' ? 'bg-neutral-800' : 'bg-primary/10'">
           <Icon :name="nextWorkout.type === 'swim' ? 'droplet' : 'activity'" :size="24" :class="nextWorkout.type === 'swim' ? 'text-neutral-400' : 'text-primary'" />
         </div>
@@ -117,11 +117,75 @@
           <div class="text-lg font-medium text-white">{{ nextWorkout.name }}</div>
           <div class="text-sm text-neutral-400">{{ nextWorkout.duration }}min · {{ formatDayName(nextWorkout.scheduled_date) }}</div>
         </div>
+      </div>
+
+      <div v-if="showNextDetails && nextWorkout.structure" class="mb-4 space-y-3">
+        <div v-if="nextWorkout.structure.objective" class="bg-dark rounded p-3">
+          <div class="flex items-center gap-2 mb-1">
+            <Icon name="target" :size="14" class="text-primary" />
+            <span class="text-xs font-medium text-white">Objetivo</span>
+          </div>
+          <p class="text-sm text-neutral-400">{{ nextWorkout.structure.objective }}</p>
+        </div>
+        <div v-if="nextWorkout.structure.warmup" class="bg-dark rounded p-3">
+          <div class="flex items-center gap-2 mb-1">
+            <Icon name="thermometer" :size="14" class="text-yellow-500" />
+            <span class="text-xs font-medium text-white">Aquecimento</span>
+          </div>
+          <p class="text-sm text-neutral-400 whitespace-pre-line">{{ nextWorkout.structure.warmup }}</p>
+        </div>
+        <div v-if="nextWorkout.structure.main_part" class="bg-dark rounded p-3">
+          <div class="flex items-center gap-2 mb-1">
+            <Icon name="star" :size="14" class="text-primary" />
+            <span class="text-xs font-medium text-white">Parte Principal</span>
+          </div>
+          <p class="text-sm text-neutral-400 whitespace-pre-line">{{ nextWorkout.structure.main_part }}</p>
+        </div>
+        <div v-if="nextWorkout.structure.cooldown" class="bg-dark rounded p-3">
+          <div class="flex items-center gap-2 mb-1">
+            <Icon name="sun" :size="14" class="text-blue-500" />
+            <span class="text-xs font-medium text-white">Desaquecimento</span>
+          </div>
+          <p class="text-sm text-neutral-400 whitespace-pre-line">{{ nextWorkout.structure.cooldown }}</p>
+        </div>
+        <div v-if="nextWorkout.structure.drills && nextWorkout.structure.drills.length" class="bg-dark rounded p-3">
+          <div class="flex items-center gap-2 mb-1">
+            <Icon name="book-open" :size="14" class="text-green-400" />
+            <span class="text-xs font-medium text-white">Educativos</span>
+          </div>
+          <ul class="space-y-1">
+            <li v-for="(drill, i) in nextWorkout.structure.drills" :key="i" class="text-sm text-neutral-400 flex items-start gap-2">
+              <span class="text-neutral-600">•</span>
+              <span>{{ drill }}</span>
+            </li>
+          </ul>
+        </div>
+        <div v-if="nextWorkout.structure.attention_points && nextWorkout.structure.attention_points.length" class="bg-dark rounded p-3">
+          <div class="flex items-center gap-2 mb-1">
+            <Icon name="eye" :size="14" class="text-purple-400" />
+            <span class="text-xs font-medium text-white">Pontos de Atenção</span>
+          </div>
+          <ul class="space-y-1">
+            <li v-for="(point, i) in nextWorkout.structure.attention_points" :key="i" class="text-sm text-neutral-400 flex items-start gap-2">
+              <span class="text-neutral-600">•</span>
+              <span>{{ point }}</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <button
+          @click="showNextDetails = !showNextDetails"
+          class="flex-1 py-2.5 bg-dark hover:bg-dark/80 rounded text-sm font-medium transition-colors text-center text-neutral-300 border border-neutral-800"
+        >
+          {{ showNextDetails ? 'Fechar' : 'Ver Detalhes' }}
+        </button>
         <router-link
           :to="`/workout/${nextWorkout.id}`"
-          class="px-4 py-2 bg-dark hover:bg-dark/80 rounded text-sm font-medium transition-colors flex-shrink-0 border border-neutral-700"
+          class="flex-1 py-2.5 bg-primary hover:bg-primary-dark rounded text-sm font-medium transition-colors text-center"
         >
-          Ver
+          Iniciar
         </router-link>
       </div>
     </div>
@@ -309,6 +373,7 @@ const strava = useStravaStore()
 const workoutStore = useWorkoutStore()
 
 const showDetails = ref(false)
+const showNextDetails = ref(false)
 
 const today = new Date().toLocaleDateString('pt-BR', {
   weekday: 'long',
