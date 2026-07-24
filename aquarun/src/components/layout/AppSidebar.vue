@@ -1,5 +1,5 @@
 <template>
-  <aside class="fixed left-0 top-0 h-full w-64 bg-surface border-r border-neutral-800 z-40 flex flex-col">
+  <aside class="hidden md:flex fixed left-0 top-0 h-full w-64 bg-surface border-r border-neutral-800 z-40 flex-col">
     <div class="p-6 border-b border-neutral-800">
       <router-link to="/" class="flex items-center gap-3">
         <img src="../../assets/Logo.png" alt="AquaRun" class="h-8 w-8 rounded object-contain" />

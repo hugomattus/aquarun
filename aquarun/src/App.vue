@@ -8,12 +8,13 @@
 
   <div v-else-if="showLayout" class="min-h-screen flex bg-dark">
     <AppSidebar />
-    <main class="flex-1 ml-0 lg:ml-64">
+    <main class="flex-1 lg:ml-64">
       <AppHeader />
-      <div class="p-4 lg:p-8">
+      <div class="p-4 lg:p-8 pb-24 md:pb-8">
         <router-view />
       </div>
     </main>
+    <AppBottomNav />
   </div>
 
   <router-view v-else />
@@ -24,6 +25,7 @@ import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import AppSidebar from './components/layout/AppSidebar.vue'
+import AppBottomNav from './components/layout/AppBottomNav.vue'
 import AppHeader from './components/layout/AppHeader.vue'
 
 const route = useRoute()
