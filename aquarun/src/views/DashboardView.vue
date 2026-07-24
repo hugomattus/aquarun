@@ -367,7 +367,7 @@ function isThisWeek(dateStr) {
 
 const stats = computed(() => {
   const weekRuns = strava.runActivities.filter(a => isThisWeek(a.start_date))
-  const weekSwims = strava.swimActivities.filter(a => isThisWeek(a.start_date))
+  const weekSwims = strava.swimActivities.filter(a => isThisWeek(a.start_date) && a.moving_time >= 600)
 
   const totalRunDistance = weekRuns.reduce((sum, a) => sum + (a.distance || 0), 0)
   const totalSwimDistance = weekSwims.reduce((sum, a) => sum + (a.distance || 0), 0)
@@ -445,7 +445,7 @@ const runPaceChartData = computed(() => ({
 
 const swimChartData = computed(() => {
   const swims = strava.swimActivities
-    .filter(a => a.distance > 0 && isThisWeek(a.start_date))
+    .filter(a => a.distance > 0 && isThisWeek(a.start_date) && a.moving_time >= 600)
     .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
 
   return {
