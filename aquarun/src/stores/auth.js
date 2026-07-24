@@ -105,11 +105,6 @@ export const useAuthStore = defineStore('auth', () => {
 
     await fetchProfile()
   }
-      }
-    }
-
-    await fetchProfile()
-  }
 
   return { user, profile, loading, init, signUp, signIn, signOut, fetchProfile, resetPassword, updatePassword, updateProfile }
 })
