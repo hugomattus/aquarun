@@ -25,9 +25,110 @@
           </div>
         </div>
 
-        <div class="bg-surface rounded p-5 border border-neutral-800 mb-6">
-          <div v-if="workout.description" class="text-sm text-neutral-400 mb-4">{{ workout.description }}</div>
-          <div v-if="parsedIntervals.length" class="space-y-2">
+        <template v-if="structure">
+          <div class="space-y-4 mb-6">
+            <div class="bg-surface rounded p-5 border border-neutral-800">
+              <div class="flex items-center gap-2 mb-3">
+                <Icon name="target" :size="16" class="text-primary" />
+                <h3 class="text-sm font-medium text-white">Objetivo</h3>
+              </div>
+              <p class="text-sm text-neutral-400 leading-relaxed">{{ structure.objective }}</p>
+            </div>
+
+            <div v-if="structure.warmup" class="bg-surface rounded p-5 border border-neutral-800">
+              <div class="flex items-center gap-2 mb-3">
+                <Icon name="thermometer" :size="16" class="text-yellow-500" />
+                <h3 class="text-sm font-medium text-white">Aquecimento</h3>
+              </div>
+              <p class="text-sm text-neutral-400 leading-relaxed whitespace-pre-line">{{ structure.warmup }}</p>
+            </div>
+
+            <div v-if="structure.mobility && structure.mobility.length" class="bg-surface rounded p-5 border border-neutral-800">
+              <div class="flex items-center gap-2 mb-3">
+                <Icon name="move" :size="16" class="text-blue-400" />
+                <h3 class="text-sm font-medium text-white">Mobilidade</h3>
+              </div>
+              <ul class="space-y-2">
+                <li v-for="(item, i) in structure.mobility" :key="i" class="text-sm text-neutral-400 flex items-start gap-2">
+                  <span class="text-neutral-600 mt-1">•</span>
+                  <span>{{ item }}</span>
+                </li>
+              </ul>
+            </div>
+
+            <div v-if="structure.drills && structure.drills.length" class="bg-surface rounded p-5 border border-neutral-800">
+              <div class="flex items-center gap-2 mb-3">
+                <Icon name="book-open" :size="16" class="text-green-400" />
+                <h3 class="text-sm font-medium text-white">Educativos</h3>
+              </div>
+              <ul class="space-y-2">
+                <li v-for="(item, i) in structure.drills" :key="i" class="text-sm text-neutral-400 flex items-start gap-2">
+                  <span class="text-neutral-600 mt-1">•</span>
+                  <span>{{ item }}</span>
+                </li>
+              </ul>
+            </div>
+
+            <div v-if="structure.activation" class="bg-surface rounded p-5 border border-neutral-800">
+              <div class="flex items-center gap-2 mb-3">
+                <Icon name="zap" :size="16" class="text-orange-400" />
+                <h3 class="text-sm font-medium text-white">Ativação</h3>
+              </div>
+              <p class="text-sm text-neutral-400 leading-relaxed whitespace-pre-line">{{ structure.activation }}</p>
+            </div>
+
+            <div v-if="structure.main_part" class="bg-surface rounded p-5 border border-neutral-800">
+              <div class="flex items-center gap-2 mb-3">
+                <Icon name="star" :size="16" class="text-primary" />
+                <h3 class="text-sm font-medium text-white">Parte Principal</h3>
+              </div>
+              <p class="text-sm text-neutral-400 leading-relaxed whitespace-pre-line">{{ structure.main_part }}</p>
+            </div>
+
+            <div v-if="structure.cooldown" class="bg-surface rounded p-5 border border-neutral-800">
+              <div class="flex items-center gap-2 mb-3">
+                <Icon name="sun" :size="16" class="text-blue-500" />
+                <h3 class="text-sm font-medium text-white">Desaquecimento</h3>
+              </div>
+              <p class="text-sm text-neutral-400 leading-relaxed whitespace-pre-line">{{ structure.cooldown }}</p>
+            </div>
+
+            <div v-if="structure.attention_points && structure.attention_points.length" class="bg-surface rounded p-5 border border-neutral-800">
+              <div class="flex items-center gap-2 mb-3">
+                <Icon name="eye" :size="16" class="text-purple-400" />
+                <h3 class="text-sm font-medium text-white">Pontos de Atenção</h3>
+              </div>
+              <ul class="space-y-2">
+                <li v-for="(item, i) in structure.attention_points" :key="i" class="text-sm text-neutral-400 flex items-start gap-2">
+                  <span class="text-neutral-600 mt-1">•</span>
+                  <span>{{ item }}</span>
+                </li>
+              </ul>
+            </div>
+
+            <div v-if="structure.adaptation_criteria" class="bg-surface rounded p-5 border border-neutral-800">
+              <div class="flex items-center gap-2 mb-3">
+                <Icon name="settings" :size="16" class="text-yellow-400" />
+                <h3 class="text-sm font-medium text-white">Critérios de Adaptação</h3>
+              </div>
+              <p class="text-sm text-neutral-400 leading-relaxed whitespace-pre-line">{{ structure.adaptation_criteria }}</p>
+            </div>
+
+            <div v-if="structure.coach_message" class="bg-primary/10 rounded p-5 border border-primary/20">
+              <div class="flex items-center gap-2 mb-3">
+                <Icon name="message-circle" :size="16" class="text-primary" />
+                <h3 class="text-sm font-medium text-white">Mensagem do Treinador</h3>
+              </div>
+              <p class="text-sm text-neutral-300 italic leading-relaxed">{{ structure.coach_message }}</p>
+            </div>
+          </div>
+        </template>
+
+        <template v-else>
+          <div v-if="workout.description" class="bg-surface rounded p-5 border border-neutral-800 mb-6">
+            <p class="text-sm text-neutral-400">{{ workout.description }}</p>
+          </div>
+          <div v-if="parsedIntervals.length" class="bg-surface rounded p-5 border border-neutral-800 mb-6 space-y-2">
             <div
               v-for="(interval, i) in parsedIntervals"
               :key="i"
@@ -43,7 +144,7 @@
               <div class="text-xs text-neutral-500 flex-shrink-0">{{ interval.duration }}min</div>
             </div>
           </div>
-        </div>
+        </template>
 
         <div v-if="workout.status === 'completed'" class="bg-surface rounded p-5 border border-neutral-800 mb-6">
           <div class="flex items-center gap-2 mb-3">
@@ -68,13 +169,9 @@
               <div class="text-white">{{ workout.actual_heartrate ? Math.round(workout.actual_heartrate) : '-' }}</div>
             </div>
           </div>
-          <div v-if="workout.feedback_exhaustion" class="mt-3 bg-dark rounded p-3">
-            <div class="text-neutral-500 text-sm">Cansaço</div>
-            <div class="text-white">{{ workout.feedback_exhaustion }}/10</div>
-          </div>
-          <div v-if="workout.feedback_pain" class="mt-3 bg-dark rounded p-3">
-            <div class="text-neutral-500 text-sm">Dores</div>
-            <div class="text-white text-sm">{{ workout.feedback_pain }}</div>
+          <div v-if="workout.feedback_effort" class="mt-3 bg-dark rounded p-3">
+            <div class="text-neutral-500 text-sm">Esforço</div>
+            <div class="text-white">{{ effortLabels[workout.feedback_effort] || workout.feedback_effort }}</div>
           </div>
           <div v-if="workout.feedback_notes" class="mt-3 bg-dark rounded p-3">
             <div class="text-neutral-500 text-sm">Observações</div>
@@ -110,87 +207,137 @@
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-xs text-neutral-500 mb-1">Distância (km)</label>
-                <input
-                  v-model="manualData.distance"
-                  type="number"
-                  step="0.1"
-                  placeholder="5.0"
-                  class="w-full bg-dark border border-neutral-800 rounded px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary"
-                />
+                <input v-model="manualData.distance" type="number" step="0.1" placeholder="5.0"
+                  class="w-full bg-dark border border-neutral-800 rounded px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
               </div>
               <div>
                 <label class="block text-xs text-neutral-500 mb-1">Tempo (min)</label>
-                <input
-                  v-model="manualData.duration"
-                  type="number"
-                  placeholder="45"
-                  class="w-full bg-dark border border-neutral-800 rounded px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary"
-                />
+                <input v-model="manualData.duration" type="number" placeholder="45"
+                  class="w-full bg-dark border border-neutral-800 rounded px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
               </div>
               <div>
                 <label class="block text-xs text-neutral-500 mb-1">Ritmo (min/km)</label>
-                <input
-                  v-model="manualData.pace"
-                  type="text"
-                  placeholder="6:30"
-                  class="w-full bg-dark border border-neutral-800 rounded px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary"
-                />
+                <input v-model="manualData.pace" type="text" placeholder="6:30"
+                  class="w-full bg-dark border border-neutral-800 rounded px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
               </div>
               <div>
                 <label class="block text-xs text-neutral-500 mb-1">BPM médio</label>
-                <input
-                  v-model="manualData.heartrate"
-                  type="number"
-                  placeholder="140"
-                  class="w-full bg-dark border border-neutral-800 rounded px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary"
-                />
+                <input v-model="manualData.heartrate" type="number" placeholder="140"
+                  class="w-full bg-dark border border-neutral-800 rounded px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
+              </div>
+              <div>
+                <label class="block text-xs text-neutral-500 mb-1">BPM máximo</label>
+                <input v-model="manualData.maxHeartrate" type="number" placeholder="175"
+                  class="w-full bg-dark border border-neutral-800 rounded px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
+              </div>
+              <div>
+                <label class="block text-xs text-neutral-500 mb-1">Cadência</label>
+                <input v-model="manualData.cadence" type="number" placeholder="170"
+                  class="w-full bg-dark border border-neutral-800 rounded px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
+              </div>
+              <div>
+                <label class="block text-xs text-neutral-500 mb-1">Elevação (m)</label>
+                <input v-model="manualData.elevation" type="number" placeholder="50"
+                  class="w-full bg-dark border border-neutral-800 rounded px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
+              </div>
+              <div>
+                <label class="block text-xs text-neutral-500 mb-1">Calorias</label>
+                <input v-model="manualData.calories" type="number" placeholder="400"
+                  class="w-full bg-dark border border-neutral-800 rounded px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
               </div>
             </div>
           </div>
 
           <div class="bg-surface rounded p-5 border border-neutral-800">
-            <h3 class="text-sm font-medium text-white mb-4">Feedback do Treino</h3>
+            <h3 class="text-sm font-medium text-white mb-5">Como foi o treino?</h3>
 
-            <div class="mb-5">
-              <label class="block text-sm text-neutral-400 mb-2">Nível de cansaço (1-10)</label>
-              <div class="flex gap-2">
+            <div class="mb-6">
+              <label class="block text-sm text-neutral-400 mb-3">Esforço percebido</label>
+              <div class="grid grid-cols-5 gap-2">
                 <button
-                  v-for="n in 10"
-                  :key="n"
-                  @click="feedback.exhaustion = n"
-                  class="w-9 h-9 rounded text-sm font-medium transition-all"
-                  :class="feedback.exhaustion === n
+                  v-for="opt in effortOptions"
+                  :key="opt.value"
+                  @click="feedback.effort = opt.value"
+                  class="flex flex-col items-center gap-1 p-2 rounded text-center transition-all"
+                  :class="feedback.effort === opt.value ? 'bg-primary text-white' : 'bg-dark text-neutral-400 hover:bg-dark/80'"
+                >
+                  <span class="text-lg">{{ opt.emoji }}</span>
+                  <span class="text-[10px] leading-tight">{{ opt.label }}</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="mb-6">
+              <label class="block text-sm text-neutral-400 mb-3">Dor muscular (0-10)</label>
+              <div class="flex gap-1.5">
+                <button
+                  v-for="n in 11"
+                  :key="n - 1"
+                  @click="feedback.pain = n - 1"
+                  class="flex-1 h-9 rounded text-sm font-medium transition-all"
+                  :class="feedback.pain === (n - 1)
                     ? 'bg-primary text-white'
-                    : n <= 3 ? 'bg-dark text-green-400 hover:bg-dark/80'
-                    : n <= 6 ? 'bg-dark text-yellow-400 hover:bg-dark/80'
+                    : (n - 1) <= 3 ? 'bg-dark text-green-400 hover:bg-dark/80'
+                    : (n - 1) <= 6 ? 'bg-dark text-yellow-400 hover:bg-dark/80'
                     : 'bg-dark text-red-400 hover:bg-dark/80'"
                 >
-                  {{ n }}
+                  {{ n - 1 }}
                 </button>
               </div>
               <div class="flex justify-between text-xs text-neutral-600 mt-1">
+                <span>Nenhuma</span>
                 <span>Leve</span>
-                <span>Moderado</span>
-                <span>Exaustivo</span>
+                <span>Moderada</span>
+                <span>Intensa</span>
               </div>
             </div>
 
-            <div class="mb-5">
-              <label class="block text-sm text-neutral-400 mb-2">Sentiu alguma dor?</label>
-              <div class="flex flex-wrap gap-2">
-                <button
-                  v-for="pain in painOptions"
-                  :key="pain"
-                  @click="togglePain(pain)"
-                  class="px-3 py-1.5 rounded text-sm transition-colors"
-                  :class="feedback.pain.includes(pain) ? 'bg-primary text-white' : 'bg-dark text-neutral-400 hover:bg-dark/80'"
-                >
-                  {{ pain }}
-                </button>
+            <div class="grid grid-cols-3 gap-4 mb-6">
+              <div>
+                <label class="block text-xs text-neutral-500 mb-2">Energia (0-10)</label>
+                <div class="flex gap-1">
+                  <button
+                    v-for="n in 11"
+                    :key="n - 1"
+                    @click="feedback.energy = n - 1"
+                    class="flex-1 h-7 rounded text-xs font-medium transition-all"
+                    :class="feedback.energy === (n - 1) ? 'bg-primary text-white' : 'bg-dark text-neutral-500 hover:bg-dark/80'"
+                  >
+                    {{ n - 1 }}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs text-neutral-500 mb-2">Sono (0-10)</label>
+                <div class="flex gap-1">
+                  <button
+                    v-for="n in 11"
+                    :key="n - 1"
+                    @click="feedback.sleep = n - 1"
+                    class="flex-1 h-7 rounded text-xs font-medium transition-all"
+                    :class="feedback.sleep === (n - 1) ? 'bg-primary text-white' : 'bg-dark text-neutral-500 hover:bg-dark/80'"
+                  >
+                    {{ n - 1 }}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs text-neutral-500 mb-2">Estresse (0-10)</label>
+                <div class="flex gap-1">
+                  <button
+                    v-for="n in 11"
+                    :key="n - 1"
+                    @click="feedback.stress = n - 1"
+                    class="flex-1 h-7 rounded text-xs font-medium transition-all"
+                    :class="feedback.stress === (n - 1) ? 'bg-primary text-white' : 'bg-dark text-neutral-500 hover:bg-dark/80'"
+                  >
+                    {{ n - 1 }}
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div class="mb-5">
+            <div class="mb-6">
               <label class="block text-sm text-neutral-400 mb-2">Observações</label>
               <textarea
                 v-model="feedback.notes"
@@ -202,7 +349,7 @@
 
             <button
               @click="completeWorkout"
-              :disabled="!feedback.exhaustion"
+              :disabled="!feedback.effort"
               class="w-full py-2.5 bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed rounded font-medium transition-colors text-sm"
             >
               Concluir Treino
@@ -227,9 +374,28 @@ const route = useRoute()
 const workoutStore = useWorkoutStore()
 const strava = useStravaStore()
 
+const effortOptions = [
+  { value: 'very_easy', emoji: '😄', label: 'Muito fácil' },
+  { value: 'easy', emoji: '🙂', label: 'Fácil' },
+  { value: 'moderate', emoji: '😐', label: 'Normal' },
+  { value: 'hard', emoji: '😓', label: 'Difícil' },
+  { value: 'very_hard', emoji: '🥵', label: 'Muito difícil' },
+]
+
+const effortLabels = {
+  very_easy: '😄 Muito fácil',
+  easy: '🙂 Fácil',
+  moderate: '😐 Normal',
+  hard: '😓 Difícil',
+  very_hard: '🥵 Muito difícil',
+}
+
 const feedback = ref({
-  exhaustion: null,
-  pain: [],
+  effort: null,
+  pain: 0,
+  energy: 0,
+  sleep: 0,
+  stress: 0,
   notes: '',
 })
 
@@ -238,18 +404,25 @@ const manualData = ref({
   duration: '',
   pace: '',
   heartrate: '',
+  maxHeartrate: '',
+  cadence: '',
+  elevation: '',
+  calories: '',
 })
 
 const selectedActivity = ref(null)
 
-const painOptions = [
-  'Joelho', 'Tornozelo', 'Quadril', 'Lombar',
-  'Ombro', 'Panturrilha', 'Peito', 'Nenhum',
-]
-
 const workout = computed(() =>
   workoutStore.workouts.find(w => w.id === route.params.id)
 )
+
+const structure = computed(() => {
+  if (!workout.value?.structure) return null
+  if (typeof workout.value.structure === 'string') {
+    try { return JSON.parse(workout.value.structure) } catch { return null }
+  }
+  return workout.value.structure
+})
 
 const parsedIntervals = computed(() => {
   if (!workout.value?.intervals) return []
@@ -286,34 +459,25 @@ function selectActivity(activity) {
   selectedActivity.value = activity
 }
 
-function togglePain(pain) {
-  if (pain === 'Nenhum') {
-    feedback.value.pain = ['Nenhum']
-    return
-  }
-  feedback.value.pain = feedback.value.pain.filter(p => p !== 'Nenhum')
-  const idx = feedback.value.pain.indexOf(pain)
-  if (idx === -1) {
-    feedback.value.pain.push(pain)
-  } else {
-    feedback.value.pain.splice(idx, 1)
-  }
-}
-
 async function completeWorkout() {
-  if (!feedback.value.exhaustion) return
+  if (!feedback.value.effort) return
 
   if (selectedActivity.value) {
-    const pace = selectedActivity.value.moving_time > 0
-      ? selectedActivity.value.distance / selectedActivity.value.moving_time
-      : null
+    const a = selectedActivity.value
+    const pace = a.moving_time > 0 ? a.distance / a.moving_time : null
 
     await workoutStore.saveWorkoutPerformance(workout.value.id, {
-      distance: selectedActivity.value.distance,
-      duration: selectedActivity.value.moving_time,
+      distance: a.distance,
+      duration: a.moving_time,
       pace: pace,
-      heartrate: selectedActivity.value.average_heartrate,
-      calories: selectedActivity.value.calories,
+      heartrate: a.average_heartrate,
+      maxHeartrate: a.max_heartrate,
+      cadence: a.average_cadence,
+      elevation: a.total_elevation_gain,
+      calories: a.calories,
+      movingTime: a.moving_time,
+      elapsedTime: a.elapsed_time,
+      splits: a.splits || null,
     })
   } else if (manualData.value.distance || manualData.value.duration) {
     const distance = manualData.value.distance ? parseFloat(manualData.value.distance) * 1000 : null
@@ -333,13 +497,22 @@ async function completeWorkout() {
       duration: duration,
       pace: pace,
       heartrate: manualData.value.heartrate ? parseFloat(manualData.value.heartrate) : null,
-      calories: null,
+      maxHeartrate: manualData.value.maxHeartrate ? parseFloat(manualData.value.maxHeartrate) : null,
+      cadence: manualData.value.cadence ? parseFloat(manualData.value.cadence) : null,
+      elevation: manualData.value.elevation ? parseFloat(manualData.value.elevation) : null,
+      calories: manualData.value.calories ? parseFloat(manualData.value.calories) : null,
+      movingTime: duration,
+      elapsedTime: duration,
+      splits: null,
     })
   }
 
   await workoutStore.saveWorkoutFeedback(workout.value.id, {
-    exhaustion: feedback.value.exhaustion,
-    pain: feedback.value.pain.join(', ') || null,
+    effort: feedback.value.effort,
+    pain: feedback.value.pain,
+    energy: feedback.value.energy,
+    sleep: feedback.value.sleep,
+    stress: feedback.value.stress,
     notes: feedback.value.notes || null,
   })
 

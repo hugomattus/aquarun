@@ -57,7 +57,10 @@
             <div class="text-sm text-neutral-500">
               {{ workout.duration }}min
               <span v-if="workout.actual_distance"> · {{ formatDistance(workout.actual_distance) }}</span>
-              <span v-if="workout.feedback_exhaustion"> · cansaço {{ workout.feedback_exhaustion }}/10</span>
+              <span v-if="workout.feedback_effort"> · {{ effortLabel(workout.feedback_effort) }}</span>
+            </div>
+            <div v-if="getWorkoutObjective(workout)" class="text-xs text-neutral-600 mt-1 line-clamp-1">
+              {{ getWorkoutObjective(workout) }}
             </div>
           </div>
           <div class="flex-shrink-0">
@@ -129,6 +132,24 @@ function dayShort(dateStr) {
   return d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')
 }
 
+const effortLabels = {
+  very_easy: '😊 muito fácil',
+  easy: '👍 fácil',
+  moderate: '💪 normal',
+  hard: '😤 difícil',
+  very_hard: '🔥 muito difícil',
+}
+
+function effortLabel(effort) {
+  return effortLabels[effort] || effort
+}
+
+function getWorkoutObjective(workout) {
+  if (!workout.structure) return null
+  const s = typeof workout.structure === 'string' ? (() => { try { return JSON.parse(workout.structure) } catch { return null } })() : workout.structure
+  return s?.objective || null
+}
+
 async function generateNextWeek() {
   generating.value = true
   try {
@@ -147,8 +168,17 @@ async function generateNextWeek() {
           total_swim_distance: weekStats.swimDistance,
           total_run_time: weekStats.runTime,
           total_swim_time: weekStats.swimTime,
-          avg_exhaustion: weekStats.avgExhaustion,
+          weekly_volume: weekStats.weeklyVolume,
+          weekly_load: weekStats.weeklyLoad,
+          avg_effort: weekStats.avgEffort,
+          avg_exhaustion: weekStats.avgEffort,
+          avg_pain: weekStats.avgPain,
+          avg_energy: weekStats.avgEnergy,
+          avg_sleep: weekStats.avgSleep,
+          avg_stress: weekStats.avgStress,
           avg_heartrate: weekStats.avgHeartrate,
+          avg_run_pace: weekStats.avgRunPace,
+          avg_swim_pace: weekStats.avgSwimPace,
           pain_report: weekStats.painReports.join('; ') || null,
         },
         weekNumber: currentWeek.value + 1,
@@ -207,6 +237,7 @@ async function generateNextWeek() {
         scheduled_date: scheduledDate.toISOString().split('T')[0],
         duration: workout.duration,
         intervals: JSON.stringify(workout.intervals || []),
+        structure: workout.structure || null,
         week_number: nextWeekNumber,
       })
     }

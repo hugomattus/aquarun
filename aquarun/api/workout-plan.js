@@ -34,61 +34,83 @@ export default async function handler(req, res) {
     if (profile.race_date) {
       const raceDate = new Date(profile.race_date)
       const weeksUntilRace = Math.max(1, Math.ceil((raceDate - Date.now()) / (7 * 24 * 60 * 60 * 1000)))
-      raceInfo = `
-- DATA DA PROVA/META: ${profile.race_date} (${weeksUntilRace} semanas até a prova)
-- IMPORTANTE: Monte um plano periodizado com ${weeksUntilRace} semanas. Semanas iniciais com volume menor, progredindo até um pico 1-2 semanas antes da prova, e depois uma semana de tapering (redução) na semana da prova.`
+      raceInfo = `\n- DATA DA PROVA/META: ${profile.race_date} (${weeksUntilRace} semanas até a prova)
+- IMPORTANTE: Monte um plano periodizado com ${weeksUntilRace} semanas. Semanas iniciais com volume menor, progredindo até um pico 1-2 semanas antes da prova, e depois uma semana de tapering na semana da prova.`
     }
 
-    const systemPrompt = `Você é um treinador profissional de natação e corrida, especializado em treinamento personalizado. Seu objetivo é criar planos de treino semanais detalhados, seguros e eficazes.
+    const systemPrompt = `Você é um treinador esportivo especializado em corrida de rua e natação (apenas crawl).
+Sua função é criar treinos personalizados com nível equivalente ao de um treinador profissional, utilizando os dados do atleta (histórico, evolução, objetivos e disponibilidade).
+
+NÃO gere apenas distância e pace. Cada treino deve ser completo, explicando exatamente o que o atleta deve fazer do início ao fim.
 
 REGRAS FUNDAMENTAIS:
 1. Respeite SEMPRE as limitações físicas do atleta (lesões, restrições)
 2. Progrida a carga gradualmente (nunca mais de 10% por semana)
 3. Alterne dias de corrida e natação em dias SEPARADOS
-4. Inclua aquecimento e volta à calma em TODOS os treinos
+4. Nunca agendar dois treinos intensos de corrida em dias consecutivos
 5. O treino longo deve ser no dia de corrida indicado
 6. Seja ESPECÍFICO em distâncias, ritmos e tempos
 7. Considere idade, peso, experiência e nível de atividade
 8. Se há data de prova, faça periodização com tapering
-9. Natação: foque no estilo principal do atleta
-10. Retorne APENAS JSON válido, sem texto extra
+9. Natação: APENAS crawl. Nunca gerar peito, costas, borboleta ou medley
+10. Retorne APENAS JSON válido
 
-ESTRUTURA DO JSON RETORNADO:
+TIPOS DE TREINO CORRIDA:
+- regenerativo: recuperação ativa, ritmo bem leve
+- leve: corrida fácil e confortável
+- moderado: ritmo moderado, conversa difícil
+- intervalado: tiros com descanso
+- fartlek: variação de ritmo livre
+- tempo run: ritmo constante moderado-alto
+- limiar: ritmo de limiar anaeróbico
+- subida: treino em subida
+- longão: treino longo (no dia especificado)
+- progressivo: começa leve e vai acelerando
+- prova simulada: simula condição de prova
+
+TIPOS DE TREINO NATAÇÃO (apenas crawl):
+- técnica: foco em técnica com educativos
+- resistência: distância contínua
+- intervalado: séries com descanso
+- velocidade: séries curtas e rápidas
+
+ESTRUTURA OBRIGÓRIA DO JSON RETORNADO:
 {
-  "weekLabel": "Semana 1 de X",
-  "summary": "Resumo breve do que esperar esta semana",
+  "weekLabel": "Semana 1",
+  "summary": "Resumo da semana",
   "week": [
     {
       "day": "Segunda",
       "type": "run",
       "name": "Nome do treino",
-      "description": "Descrição geral do treino",
       "duration": 45,
-      "intervals": [
-        {"type": "warmup", "duration": 10, "description": "Aquecimento com caminhada e mobilidade"},
-        {"type": "main", "duration": 25, "description": "Corrida contínua a 6:30/km"},
-        {"type": "cooldown", "duration": 10, "description": "Volta à calma e alongamento"}
-      ]
+      "structure": {
+        "objective": "Desenvolver resistência aeróbica base. 2-3 frases explicando por que existe, que adaptação fisiológica busca, como ajuda a evoluir.",
+        "warmup": "10 minutos de trote\nPace entre 6:30 e 6:50/km\nZona 1-2\nRespiração confortável",
+        "mobility": ["Mobilidade de tornozelo: 10 repetições cada lado, amplitude controlada", "Mobilidade de quadril: 10 círculos cada lado"],
+        "drills": ["Skipping alto: 3x20 metros, joelho alto, braço oposto, postura ereta"],
+        "activation": "4 acelerações de 80 metros\nRecuperação caminhando entre cada uma",
+        "main_part": "6 x 800m\nPace: 4:55-5:00/km\nZona 3-4\nDescanso: 2 minutos trotando",
+        "cooldown": "5-10 minutos de trote leve\nAlongamento leve de quadril e panturrilha",
+        "attention_points": ["Manter cadência entre 170-180spm", "Evitar acelerar no início das séries", "Controlar FC, não deixar passar da Zona 4"],
+        "adaptation_criteria": "Se FC ultrapassar Zona 5 antes do final, reduzir ritmo em 5s/km. Se não conseguir completar todas as séries, diminuir uma série.",
+        "coach_message": "Hoje o foco não é velocidade, mas consistência. Faça cada quilômetro com controle. É esse tipo de treino que constrói desempenho nas próximas semanas."
+      }
     }
   ]
 }
 
-Tipos de intervalo: "warmup", "main", "cooldown", "rest", "repetition"
-Tipos de treino: "run", "swim", "rest"
+IMPORTANTE sobre a estrutura:
+- Cada treino DEVE ter todas as seções da structure (objective, warmup, main_part, cooldown, attention_points, adaptation_criteria, coach_message)
+- As seções mobility, drills e activation são OPCIONAIS - inclua apenas quando fizer sentido para o tipo de treino
+- O warmup e cooldown devem ser sempre incluídos
+- O main_part deve ser extremamente detalhado com séries, repetições, distâncias, paces, zonas e descanso
+- O objective deve explicar o PROPÓSITO do treino em 2-3 frases
+- Os attention_points devem ser orientações práticas durante o treino
+- O adaptation_criteria deve explicar como adaptar se o atleta não conseguir cumprir
+- O coach_message deve ser motivador e humano
 
-IMPORTANTE sobre os tipos de treino de corrida:
-- recovery: recuperação ativa, ritmo bem leve
-- easy: corrida fácil e confortável
-- tempo: ritmo moderado-alternado
-- intervals: tiros com descanso
-- long: treino longo (no dia指定ado)
-- fartlek: variação de ritmo livre
-
-IMPORTANTE sobre natação:
-- drill: exercícios técnicos
-- endurance: distância contínua
-- intervals: séries com descanso
-- technique: foco em técnica`
+NUNCA inclua treinos de natação que não sejam crawl. educationalis de crawl permitidos: catch-up, crawl com um braço, polegar na coxa, pernada com prancha, respiração bilateral.`
 
     const userPrompt = `CRIE O PLANO DE TREINO SEMANAL PARA ESTE ATLETA:
 
@@ -133,13 +155,16 @@ ${hasSwimming ? `- Dias de natação: ${swimDaysLabels || 'não definido'}` : ''
 - Objetivo corrida: ${profile.run_goal || 'não informado'}${raceInfo}
 
 INSTRUÇÕES:
-1. Cada dia de corrida deve ter UM treino com aquecimento, parte principal e volta à calma
-2. Cada dia de natação deve ter UM treino com aquecimento, drills, parte principal e volta à calma
-3. Dias sem treino marcado: inclua um treino "rest" com duração 0
+1. Cada dia de corrida deve ter UM treino COMPLETO com todas as seções da structure
+2. Cada dia de natação deve ter UM treino COMPLETO com todas as seções da structure
+3. Dias sem treino marcado: inclua um treino "rest" com duração 0 e type "rest"
 4. O treino longo deve ser no dia especificado e ser o mais longo da semana
-5. Ajuste intensidades baseado no nível e experiência
-6. Se tem lesão, evite movimentos que piorem a condição
-7. Se tem data de prova, crie progressão adequada
+5. Nunca coloque dois treinos intensos de corrida (intervalado, tempo run, limiar) em dias consecutivos
+6. Ajuste intensidades baseado no nível e experiência
+7. Se tem lesão, evite movimentos que piorem a condição
+8. Se tem data de prova, crie progressão adequada
+9. Cada treino DEVE ter a seção structure completa com objective, warmup, main_part, cooldown, attention_points, adaptation_criteria, coach_message
+10. Natação: APENAS crawl. Nunca gerar outros estilos
 
 Retorne APENAS o JSON, sem markdown, sem código, sem explicações extras.`
 
@@ -156,7 +181,7 @@ Retorne APENAS o JSON, sem markdown, sem código, sem explicações extras.`
           { role: 'user', content: userPrompt },
         ],
         temperature: 0.6,
-        max_tokens: 3000,
+        max_tokens: 4000,
       }),
     })
 

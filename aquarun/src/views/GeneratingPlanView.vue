@@ -182,6 +182,7 @@ async function generatePlan() {
         scheduled_date: scheduledDate.toISOString().split('T')[0],
         duration: workout.duration,
         intervals: JSON.stringify(workout.intervals || []),
+        structure: workout.structure || null,
         week_number: 1,
       })
     }

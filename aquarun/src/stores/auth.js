@@ -38,10 +38,25 @@ export const useAuthStore = defineStore('auth', () => {
   async function signUp(email, password) {
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) throw error
+
     if (data.user) {
       user.value = data.user
-      await new Promise(r => setTimeout(r, 500))
-      await fetchProfile()
+
+      if (data.session) {
+        await fetchProfile()
+      } else {
+        const { data: signInData } = await supabase.auth.signInWithPassword({ email, password })
+        if (signInData?.session) {
+          user.value = signInData.user
+        }
+        await new Promise(r => setTimeout(r, 500))
+        await fetchProfile()
+      }
+
+      if (!profile.value) {
+        await supabase.from('profiles').insert({ id: data.user.id }).select().maybeSingle()
+        await fetchProfile()
+      }
     }
     return data
   }
@@ -73,18 +88,36 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function updateProfile(data) {
-    if (!profile.value) {
-      const { error: insertError } = await supabase
-        .from('profiles')
-        .insert({ id: user.value.id, ...data })
-      if (insertError) throw insertError
-    } else {
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.value.id)
+      .maybeSingle()
+
+    if (existing) {
       const { error: updateError } = await supabase
         .from('profiles')
         .update(data)
         .eq('id', user.value.id)
       if (updateError) throw updateError
+    } else {
+      const { error: insertError } = await supabase
+        .from('profiles')
+        .insert({ id: user.value.id, ...data })
+      if (insertError) {
+        if (insertError.code === '23505') {
+          const { error: retryError } = await supabase
+            .from('profiles')
+            .update(data)
+            .eq('id', user.value.id)
+          if (retryError) throw retryError
+        } else {
+          throw insertError
+        }
+      }
     }
+
+    await fetchProfile()
   }
 
   return { user, profile, loading, init, signUp, signIn, signOut, fetchProfile, resetPassword, updatePassword, updateProfile }

@@ -33,6 +33,7 @@ export const useWorkoutStore = defineStore('workouts', () => {
         scheduled_date: workout.scheduled_date,
         duration: workout.duration,
         intervals: workout.intervals,
+        structure: workout.structure || null,
         week_number: workout.week_number || 1,
         planned_distance: workout.planned_distance || null,
         planned_pace: workout.planned_pace || null,
@@ -66,18 +67,32 @@ export const useWorkoutStore = defineStore('workouts', () => {
         actual_duration: performance.duration,
         actual_pace: performance.pace,
         actual_heartrate: performance.heartrate,
+        actual_max_heartrate: performance.maxHeartrate,
+        actual_cadence: performance.cadence,
+        actual_elevation: performance.elevation,
         actual_calories: performance.calories,
+        actual_moving_time: performance.movingTime,
+        actual_elapsed_time: performance.elapsedTime,
+        splits: performance.splits,
       })
       .eq('id', workoutId)
 
     if (!error) {
       const idx = workouts.value.findIndex(w => w.id === workoutId)
       if (idx !== -1) {
-        workouts.value[idx].actual_distance = performance.distance
-        workouts.value[idx].actual_duration = performance.duration
-        workouts.value[idx].actual_pace = performance.pace
-        workouts.value[idx].actual_heartrate = performance.heartrate
-        workouts.value[idx].actual_calories = performance.calories
+        Object.assign(workouts.value[idx], {
+          actual_distance: performance.distance,
+          actual_duration: performance.duration,
+          actual_pace: performance.pace,
+          actual_heartrate: performance.heartrate,
+          actual_max_heartrate: performance.maxHeartrate,
+          actual_cadence: performance.cadence,
+          actual_elevation: performance.elevation,
+          actual_calories: performance.calories,
+          actual_moving_time: performance.movingTime,
+          actual_elapsed_time: performance.elapsedTime,
+          splits: performance.splits,
+        })
       }
     }
   }
@@ -86,8 +101,11 @@ export const useWorkoutStore = defineStore('workouts', () => {
     const { error } = await supabase
       .from('workouts')
       .update({
-        feedback_exhaustion: feedback.exhaustion,
+        feedback_effort: feedback.effort,
         feedback_pain: feedback.pain,
+        feedback_energy: feedback.energy,
+        feedback_sleep: feedback.sleep,
+        feedback_stress: feedback.stress,
         feedback_notes: feedback.notes,
       })
       .eq('id', workoutId)
@@ -95,9 +113,14 @@ export const useWorkoutStore = defineStore('workouts', () => {
     if (!error) {
       const idx = workouts.value.findIndex(w => w.id === workoutId)
       if (idx !== -1) {
-        workouts.value[idx].feedback_exhaustion = feedback.exhaustion
-        workouts.value[idx].feedback_pain = feedback.pain
-        workouts.value[idx].feedback_notes = feedback.notes
+        Object.assign(workouts.value[idx], {
+          feedback_effort: feedback.effort,
+          feedback_pain: feedback.pain,
+          feedback_energy: feedback.energy,
+          feedback_sleep: feedback.sleep,
+          feedback_stress: feedback.stress,
+          feedback_notes: feedback.notes,
+        })
       }
     }
   }
@@ -141,23 +164,71 @@ export const useWorkoutStore = defineStore('workouts', () => {
     const runs = completed.filter(w => w.type === 'run')
     const swims = completed.filter(w => w.type === 'swim')
 
+    const effortMap = { very_easy: 1, easy: 2, moderate: 3, hard: 4, very_hard: 5 }
+    const avgEffort = completed.length > 0
+      ? completed.reduce((sum, w) => sum + (effortMap[w.feedback_effort] || 0), 0) / completed.length
+      : 0
+
+    const avgPain = completed.length > 0
+      ? completed.reduce((sum, w) => sum + (w.feedback_pain || 0), 0) / completed.length
+      : 0
+    const avgEnergy = completed.length > 0
+      ? completed.reduce((sum, w) => sum + (w.feedback_energy || 0), 0) / completed.length
+      : 0
+    const avgSleep = completed.length > 0
+      ? completed.reduce((sum, w) => sum + (w.feedback_sleep || 0), 0) / completed.length
+      : 0
+    const avgStress = completed.length > 0
+      ? completed.reduce((sum, w) => sum + (w.feedback_stress || 0), 0) / completed.length
+      : 0
+
+    const totalRunDistance = runs.reduce((sum, w) => sum + (w.actual_distance || 0), 0)
+    const totalSwimDistance = swims.reduce((sum, w) => sum + (w.actual_distance || 0), 0)
+    const totalRunTime = runs.reduce((sum, w) => sum + (w.actual_duration || 0), 0)
+    const totalSwimTime = swims.reduce((sum, w) => sum + (w.actual_duration || 0), 0)
+
+    let runLoad = 0
+    runs.forEach(w => {
+      if (w.actual_distance && w.actual_pace) {
+        const intensityFactor = w.planned_pace && w.actual_pace < w.planned_pace ? 1.2 : 1.0
+        runLoad += (w.actual_distance / 1000) * intensityFactor
+      }
+    })
+    let swimLoad = 0
+    swims.forEach(w => {
+      if (w.actual_distance) {
+        swimLoad += (w.actual_distance / 1000) * 1.0
+      }
+    })
+
     return {
       total: week.length,
       completed: completed.length,
       skipped: week.filter(w => w.status === 'skipped').length,
-      runDistance: runs.reduce((sum, w) => sum + (w.actual_distance || 0), 0),
-      swimDistance: swims.reduce((sum, w) => sum + (w.actual_distance || 0), 0),
-      runTime: runs.reduce((sum, w) => sum + (w.actual_duration || 0), 0),
-      swimTime: swims.reduce((sum, w) => sum + (w.actual_duration || 0), 0),
-      avgExhaustion: completed.length > 0
-        ? completed.reduce((sum, w) => sum + (w.feedback_exhaustion || 0), 0) / completed.length
-        : 0,
+      runDistance: totalRunDistance,
+      swimDistance: totalSwimDistance,
+      runTime: totalRunTime,
+      swimTime: totalSwimTime,
+      weeklyVolume: (totalRunDistance + totalSwimDistance) / 1000,
+      weeklyLoad: runLoad + swimLoad,
+      avgEffort,
+      avgPain,
+      avgEnergy,
+      avgSleep,
+      avgStress,
+      avgExhaustion: avgEffort * 2,
       avgHeartrate: runs.length > 0
         ? runs.reduce((sum, w) => sum + (w.actual_heartrate || 0), 0) / runs.length
         : 0,
+      avgRunPace: runs.length > 0
+        ? runs.filter(w => w.actual_pace).reduce((sum, w) => sum + w.actual_pace, 0) / runs.filter(w => w.actual_pace).length
+        : 0,
+      avgSwimPace: swims.length > 0
+        ? swims.filter(w => w.actual_pace).reduce((sum, w) => sum + w.actual_pace, 0) / swims.filter(w => w.actual_pace).length
+        : 0,
       painReports: completed
-        .filter(w => w.feedback_pain)
-        .map(w => w.feedback_pain),
+        .filter(w => w.feedback_pain > 0)
+        .map(w => `dor ${w.feedback_pain}/10`),
     }
   }
 
@@ -176,7 +247,7 @@ export const useWorkoutStore = defineStore('workouts', () => {
       week_number: weekNumber,
       start_date: startDate,
       end_date: endDate,
-      avg_exhaustion: stats.avgExhaustion,
+      avg_exhaustion: stats.avgEffort,
       total_run_distance: stats.runDistance,
       total_swim_distance: stats.swimDistance,
       total_run_time: stats.runTime,
@@ -184,10 +255,11 @@ export const useWorkoutStore = defineStore('workouts', () => {
       total_workouts: stats.total,
       completed_workouts: stats.completed,
       skipped_workouts: stats.skipped,
-      avg_run_pace: null,
-      avg_swim_pace: null,
+      avg_run_pace: stats.avgRunPace,
+      avg_swim_pace: stats.avgSwimPace,
       avg_heartrate: stats.avgHeartrate,
       pain_report: stats.painReports.join('; ') || null,
+      notes: `Energia:${stats.avgEnergy.toFixed(1)} Sono:${stats.avgSleep.toFixed(1)} Estresse:${stats.avgStress.toFixed(1)} Carga:${stats.weeklyLoad.toFixed(1)} Volume:${stats.weeklyVolume.toFixed(1)}km`,
     }
 
     if (existing) {
