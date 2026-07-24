@@ -25,16 +25,6 @@
             Posso ajudar com treinos de corrida e natação. Pergunte sobre técnicas,
             planos de treino, ou peça para analisar seu desempenho.
           </p>
-          <div class="flex flex-wrap gap-2 justify-center mt-6">
-            <button
-              v-for="suggestion in suggestions"
-              :key="suggestion"
-              @click="sendMessage(suggestion)"
-              class="px-4 py-2 bg-dark hover:bg-surface-light rounded text-sm text-neutral-300 transition-colors border border-neutral-800"
-            >
-              {{ suggestion }}
-            </button>
-          </div>
         </div>
 
         <div
@@ -105,13 +95,6 @@ const chatContainer = ref(null)
 const input = ref('')
 const messages = ref([])
 const loading = ref(false)
-
-const suggestions = [
-  'Crie um plano de treino semanal para iniciante',
-  'Qual a melhor técnica de nado para iniciantes?',
-  'Como melhorar meu pace na corrida?',
-  'Dicas para evitar lesões na natação',
-]
 
 async function sendMessage(text) {
   const userMsg = text || input.value.trim()

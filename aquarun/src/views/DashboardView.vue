@@ -122,73 +122,75 @@
       </div>
     </div>
 
-    <div v-if="runChartData.labels.length > 0" class="bg-surface rounded p-5 border border-neutral-800">
-      <div class="flex items-center gap-2 mb-1">
-        <Icon name="activity" :size="18" class="text-primary" />
-        <h3 class="font-medium text-white">Análise Corrida</h3>
-      </div>
-      <p class="text-xs text-neutral-500 mb-4">Últimas {{ runChartData.labels.length }} corridas</p>
-      <div class="grid grid-cols-3 gap-3 mb-4">
-        <div class="bg-dark rounded p-3 text-center">
-          <div class="text-lg font-medium text-white">{{ runSummary.totalDistance }}</div>
-          <div class="text-xs text-neutral-500">Distância Total</div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div v-if="runChartData.labels.length > 0" class="bg-surface rounded p-4 border border-neutral-800">
+        <div class="flex items-center gap-2 mb-1">
+          <Icon name="activity" :size="16" class="text-primary" />
+          <h3 class="text-sm font-medium text-white">Análise Corrida</h3>
         </div>
-        <div class="bg-dark rounded p-3 text-center">
-          <div class="text-lg font-medium text-white">{{ runSummary.avgPace }}</div>
-          <div class="text-xs text-neutral-500">Ritmo Médio</div>
-        </div>
-        <div class="bg-dark rounded p-3 text-center">
-          <div class="text-lg font-medium text-white">{{ runSummary.totalRuns }}</div>
-          <div class="text-xs text-neutral-500">Corridas</div>
-        </div>
-      </div>
-      <div class="space-y-4">
-        <div>
-          <div class="text-xs text-neutral-500 mb-2">Distância (km)</div>
-          <div class="h-32">
-            <Line :data="runDistanceChartData" :options="chartOptions('km')" />
+        <p class="text-xs text-neutral-500 mb-3">Últimas {{ runChartData.labels.length }} corridas</p>
+        <div class="grid grid-cols-3 gap-2 mb-3">
+          <div class="bg-dark rounded p-2 text-center">
+            <div class="text-sm font-medium text-white">{{ runSummary.totalDistance }}</div>
+            <div class="text-[10px] text-neutral-500">Distância</div>
+          </div>
+          <div class="bg-dark rounded p-2 text-center">
+            <div class="text-sm font-medium text-white">{{ runSummary.avgPace }}</div>
+            <div class="text-[10px] text-neutral-500">Ritmo Médio</div>
+          </div>
+          <div class="bg-dark rounded p-2 text-center">
+            <div class="text-sm font-medium text-white">{{ runSummary.totalRuns }}</div>
+            <div class="text-[10px] text-neutral-500">Corridas</div>
           </div>
         </div>
-        <div>
-          <div class="text-xs text-neutral-500 mb-2">Ritmo (min/km)</div>
-          <div class="h-32">
-            <Line :data="runPaceChartData" :options="chartOptions('min/km', true)" />
+        <div class="space-y-3">
+          <div>
+            <div class="text-[10px] text-neutral-500 mb-1">Distância (km)</div>
+            <div class="h-20">
+              <Line :data="runDistanceChartData" :options="chartOptions('km')" />
+            </div>
+          </div>
+          <div>
+            <div class="text-[10px] text-neutral-500 mb-1">Ritmo (min/km)</div>
+            <div class="h-20">
+              <Line :data="runPaceChartData" :options="chartOptions('min/km', true)" />
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <div v-if="swimChartData.labels.length > 0" class="bg-surface rounded p-5 border border-neutral-800">
-      <div class="flex items-center gap-2 mb-1">
-        <Icon name="droplet" :size="18" class="text-neutral-400" />
-        <h3 class="font-medium text-white">Análise Natação</h3>
-      </div>
-      <p class="text-xs text-neutral-500 mb-4">Últimas {{ swimChartData.labels.length }} piscinas</p>
-      <div class="grid grid-cols-3 gap-3 mb-4">
-        <div class="bg-dark rounded p-3 text-center">
-          <div class="text-lg font-medium text-white">{{ swimSummary.totalDistance }}</div>
-          <div class="text-xs text-neutral-500">Distância Total</div>
+      <div v-if="swimChartData.labels.length > 0" class="bg-surface rounded p-4 border border-neutral-800">
+        <div class="flex items-center gap-2 mb-1">
+          <Icon name="droplet" :size="16" class="text-neutral-400" />
+          <h3 class="text-sm font-medium text-white">Análise Natação</h3>
         </div>
-        <div class="bg-dark rounded p-3 text-center">
-          <div class="text-lg font-medium text-white">{{ swimSummary.avgPace }}</div>
-          <div class="text-xs text-neutral-500">Ritmo Médio</div>
-        </div>
-        <div class="bg-dark rounded p-3 text-center">
-          <div class="text-lg font-medium text-white">{{ swimSummary.totalSwims }}</div>
-          <div class="text-xs text-neutral-500">Natações</div>
-        </div>
-      </div>
-      <div class="space-y-4">
-        <div>
-          <div class="text-xs text-neutral-500 mb-2">Distância (m)</div>
-          <div class="h-32">
-            <Line :data="swimDistanceChartData" :options="chartOptions('m')" />
+        <p class="text-xs text-neutral-500 mb-3">Últimas {{ swimChartData.labels.length }} piscinas</p>
+        <div class="grid grid-cols-3 gap-2 mb-3">
+          <div class="bg-dark rounded p-2 text-center">
+            <div class="text-sm font-medium text-white">{{ swimSummary.totalDistance }}</div>
+            <div class="text-[10px] text-neutral-500">Distância</div>
+          </div>
+          <div class="bg-dark rounded p-2 text-center">
+            <div class="text-sm font-medium text-white">{{ swimSummary.avgPace }}</div>
+            <div class="text-[10px] text-neutral-500">Ritmo Médio</div>
+          </div>
+          <div class="bg-dark rounded p-2 text-center">
+            <div class="text-sm font-medium text-white">{{ swimSummary.totalSwims }}</div>
+            <div class="text-[10px] text-neutral-500">Natações</div>
           </div>
         </div>
-        <div>
-          <div class="text-xs text-neutral-500 mb-2">Ritmo (min/100m)</div>
-          <div class="h-32">
-            <Line :data="swimPaceChartData" :options="chartOptions('min/100m', true)" />
+        <div class="space-y-3">
+          <div>
+            <div class="text-[10px] text-neutral-500 mb-1">Distância (m)</div>
+            <div class="h-20">
+              <Line :data="swimDistanceChartData" :options="chartOptions('m')" />
+            </div>
+          </div>
+          <div>
+            <div class="text-[10px] text-neutral-500 mb-1">Ritmo (min/100m)</div>
+            <div class="h-20">
+              <Line :data="swimPaceChartData" :options="chartOptions('min/100m', true)" />
+            </div>
           </div>
         </div>
       </div>

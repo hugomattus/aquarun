@@ -73,11 +73,11 @@ const navItems = [
   { path: '/', icon: 'home', label: 'Início' },
   { path: '/my-workout', icon: 'award', label: 'Treino' },
   { path: '/coach', icon: 'message-circle', label: 'Coach' },
-  { path: '/integrations', icon: 'link', label: 'Integrações' },
+  { path: '/history', icon: 'clock', label: 'Histórico' },
 ]
 
 const menuItems = [
-  { path: '/history', icon: 'clock', label: 'Histórico' },
+  { path: '/integrations', icon: 'link', label: 'Integrações' },
   { path: '/profile', icon: 'user', label: 'Perfil' },
   { path: '/settings', icon: 'settings', label: 'Configurações' },
   { path: '/help', icon: 'help-circle', label: 'Ajuda' },
