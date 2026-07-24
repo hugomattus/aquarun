@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-8">
+  <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-medium text-white">Dashboard</h1>
@@ -7,6 +7,31 @@
       </div>
       <div class="text-right text-sm text-neutral-500">
         {{ today }}
+      </div>
+    </div>
+
+    <div v-if="nextWorkout" class="bg-gradient-to-r from-primary/20 to-primary/5 rounded-lg p-5 border border-primary/20">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <Icon name="arrow-right" :size="16" class="text-primary" />
+          <span class="text-xs font-medium text-primary uppercase tracking-wide">Próximo Treino</span>
+        </div>
+        <span class="text-xs text-neutral-500">{{ formatShortDate(nextWorkout.scheduled_date) }}</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0" :class="nextWorkout.type === 'swim' ? 'bg-neutral-800' : 'bg-primary/20'">
+          <Icon :name="nextWorkout.type === 'swim' ? 'droplet' : 'activity'" :size="24" :class="nextWorkout.type === 'swim' ? 'text-neutral-400' : 'text-primary'" />
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-lg font-medium text-white">{{ nextWorkout.name }}</div>
+          <div class="text-sm text-neutral-400">{{ nextWorkout.duration }}min · {{ formatDayName(nextWorkout.scheduled_date) }}</div>
+        </div>
+        <router-link
+          :to="`/workout/${nextWorkout.id}`"
+          class="px-4 py-2 bg-primary hover:bg-primary-dark rounded text-sm font-medium transition-colors flex-shrink-0"
+        >
+          Iniciar
+        </router-link>
       </div>
     </div>
 
@@ -22,31 +47,11 @@
       <div class="flex items-center gap-4 mb-4">
         <div>
           <div class="text-xl font-medium text-white">{{ todayWorkout.name }}</div>
-          <div class="text-sm text-neutral-500">
-            {{ todayWorkout.duration }}min
-          </div>
+          <div class="text-sm text-neutral-500">{{ todayWorkout.duration }}min</div>
         </div>
       </div>
       <div v-if="todayWorkout.description" class="text-sm text-neutral-400 mb-4">
         {{ todayWorkout.description }}
-      </div>
-      <div v-if="parsedIntervals(todayWorkout.intervals).length" class="space-y-2 mb-4">
-        <div
-          v-for="(interval, i) in parsedIntervals(todayWorkout.intervals)"
-          :key="i"
-          class="flex items-center gap-3 p-2 rounded bg-dark"
-        >
-          <div
-            class="w-1.5 h-1.5 rounded-full flex-shrink-0"
-            :class="interval.type === 'warmup' ? 'bg-yellow-500' : interval.type === 'cooldown' ? 'bg-blue-500' : interval.type === 'repetition' ? 'bg-green-500' : 'bg-primary'"
-          />
-          <div class="flex-1 min-w-0">
-            <span class="text-sm text-white">{{ interval.description }}</span>
-          </div>
-          <div class="text-xs text-neutral-500 flex-shrink-0">
-            {{ interval.duration }}min
-          </div>
-        </div>
       </div>
       <router-link
         :to="`/workout/${todayWorkout.id}`"
@@ -66,44 +71,35 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
       <div
         v-for="stat in stats"
         :key="stat.label"
-        class="bg-surface rounded p-5 border border-neutral-800"
+        class="bg-surface rounded p-4 border border-neutral-800"
       >
-        <div class="flex items-center justify-between">
-          <Icon :name="stat.icon" :size="24" :class="stat.type === 'run' ? 'text-primary' : 'text-neutral-400'" />
-          <span
-            class="text-xs px-2 py-1 rounded-full"
-            :class="stat.type === 'run' ? 'bg-primary/10 text-primary' : 'bg-neutral-800 text-neutral-400'"
-          >
-            {{ stat.type === 'run' ? 'Corrida' : 'Natação' }}
-          </span>
+        <div class="flex items-center justify-between mb-2">
+          <Icon :name="stat.icon" :size="18" :class="stat.type === 'run' ? 'text-primary' : 'text-neutral-400'" />
         </div>
-        <div class="mt-3">
-          <div class="text-2xl font-medium text-white">{{ stat.value }}</div>
-          <div class="text-sm text-neutral-500">{{ stat.label }}</div>
-        </div>
+        <div class="text-xl font-medium text-white">{{ stat.value }}</div>
+        <div class="text-xs text-neutral-500">{{ stat.label }}</div>
       </div>
     </div>
 
-    <div class="bg-surface rounded p-6 border border-neutral-800">
-      <div class="flex items-center gap-3 mb-4">
-        <Icon name="calendar" :size="20" class="text-primary" />
+    <div class="bg-surface rounded p-5 border border-neutral-800">
+      <div class="flex items-center gap-2 mb-4">
+        <Icon name="calendar" :size="18" class="text-primary" />
         <h3 class="font-medium text-white">Plano da Semana</h3>
       </div>
-      <div v-if="weeklyPlan.length === 0" class="text-center py-8 text-neutral-500">
-        <Icon name="calendar" :size="32" class="mx-auto mb-2 opacity-50" />
-        <p class="mt-2">Nenhum treino planejado</p>
-        <p class="text-sm mt-1">Gere um plano com o Coach IA</p>
+      <div v-if="weeklyPlan.length === 0" class="text-center py-6 text-neutral-500">
+        <Icon name="calendar" :size="28" class="mx-auto mb-2 opacity-50" />
+        <p>Nenhum treino planejado</p>
       </div>
       <div v-else class="space-y-2">
         <router-link
           v-for="(workout, i) in weeklyPlan"
           :key="workout.id"
           :to="workout.status === 'planned' ? `/workout/${workout.id}` : '#'"
-          class="flex items-center gap-4 p-3 rounded cursor-pointer transition-colors"
+          class="flex items-center gap-3 p-3 rounded cursor-pointer transition-colors"
           :class="[
             isToday(workout.scheduled_date) ? 'bg-primary/10 border border-primary/20' : 'bg-dark',
             workout.status === 'planned' ? 'hover:bg-dark/80' : '',
@@ -114,72 +110,109 @@
           </div>
           <Icon
             :name="workout.status === 'completed' ? 'check-circle' : workout.type === 'swim' ? 'droplet' : 'activity'"
-            :size="18"
+            :size="16"
             :class="workout.status === 'completed' ? 'text-green-500' : workout.type === 'swim' ? 'text-neutral-400' : 'text-primary'"
           />
           <div class="flex-1 min-w-0">
             <div class="text-sm text-white truncate">{{ workout.name }}</div>
-            <div class="text-xs text-neutral-500">{{ workout.duration }}min</div>
           </div>
-          <div v-if="workout.status === 'completed' && workout.feedback_exhaustion" class="text-xs text-neutral-500">
-            cansaço {{ workout.feedback_exhaustion }}/10
-          </div>
-          <div v-else class="text-xs text-neutral-600">
-            {{ formatDate(workout.scheduled_date) }}
-          </div>
+          <div v-if="workout.status === 'completed'" class="text-xs text-green-500">OK</div>
+          <div v-else class="text-xs text-neutral-600">{{ dayShort(workout.scheduled_date) }}</div>
         </router-link>
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div class="bg-surface rounded p-6 border border-neutral-800">
-        <h3 class="font-medium text-white mb-4">Atividades Recentes</h3>
-        <div v-if="recentActivities.length === 0" class="text-center py-8 text-neutral-500">
-          <Icon name="bar-chart-2" :size="32" class="mx-auto mb-2 opacity-50" />
-          <p class="mt-2">Nenhuma atividade ainda</p>
-          <p class="text-sm mt-1">Conecte o Strava para importar seus treinos</p>
+    <div v-if="runChartData.labels.length > 0" class="bg-surface rounded p-5 border border-neutral-800">
+      <div class="flex items-center gap-2 mb-1">
+        <Icon name="activity" :size="18" class="text-primary" />
+        <h3 class="font-medium text-white">Análise Corrida</h3>
+      </div>
+      <p class="text-xs text-neutral-500 mb-4">Últimas {{ runChartData.labels.length }} corridas</p>
+      <div class="grid grid-cols-3 gap-3 mb-4">
+        <div class="bg-dark rounded p-3 text-center">
+          <div class="text-lg font-medium text-white">{{ runSummary.totalDistance }}</div>
+          <div class="text-xs text-neutral-500">Distância Total</div>
         </div>
-        <div v-else class="space-y-3">
-          <div
-            v-for="activity in recentActivities"
-            :key="activity.id"
-            class="flex items-center gap-4 p-3 rounded bg-dark"
-          >
-            <Icon :name="activity.type === 'swim' ? 'droplet' : 'activity'" :size="20" :class="activity.type === 'swim' ? 'text-neutral-400' : 'text-primary'" />
-            <div class="flex-1 min-w-0">
-              <div class="font-medium text-white truncate">{{ activity.name }}</div>
-              <div class="text-sm text-neutral-500">
-                {{ formatDistance(activity.distance) }} · {{ formatDuration(activity.moving_time) }}
-              </div>
-            </div>
-            <div class="text-sm text-neutral-600">
-              {{ formatDate(activity.start_date) }}
-            </div>
+        <div class="bg-dark rounded p-3 text-center">
+          <div class="text-lg font-medium text-white">{{ runSummary.avgPace }}</div>
+          <div class="text-xs text-neutral-500">Ritmo Médio</div>
+        </div>
+        <div class="bg-dark rounded p-3 text-center">
+          <div class="text-lg font-medium text-white">{{ runSummary.totalRuns }}</div>
+          <div class="text-xs text-neutral-500">Corridas</div>
+        </div>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <div class="text-xs text-neutral-500 mb-2">Distância (km)</div>
+          <div class="h-32">
+            <Line :data="runDistanceChartData" :options="chartOptions('km')" />
+          </div>
+        </div>
+        <div>
+          <div class="text-xs text-neutral-500 mb-2">Ritmo (min/km)</div>
+          <div class="h-32">
+            <Line :data="runPaceChartData" :options="chartOptions('min/km', true)" />
           </div>
         </div>
       </div>
+    </div>
 
-      <div class="bg-surface rounded p-6 border border-neutral-800">
-        <h3 class="font-medium text-white mb-4">Próximos Treinos</h3>
-        <div v-if="upcomingWorkouts.length === 0" class="text-center py-8 text-neutral-500">
-          <Icon name="award" :size="32" class="mx-auto mb-2 opacity-50" />
-          <p class="mt-2">Nenhum treino planejado</p>
-          <p class="text-sm mt-1">Gere um plano com o Coach IA</p>
+    <div v-if="swimChartData.labels.length > 0" class="bg-surface rounded p-5 border border-neutral-800">
+      <div class="flex items-center gap-2 mb-1">
+        <Icon name="droplet" :size="18" class="text-neutral-400" />
+        <h3 class="font-medium text-white">Análise Natação</h3>
+      </div>
+      <p class="text-xs text-neutral-500 mb-4">Últimas {{ swimChartData.labels.length }} piscinas</p>
+      <div class="grid grid-cols-3 gap-3 mb-4">
+        <div class="bg-dark rounded p-3 text-center">
+          <div class="text-lg font-medium text-white">{{ swimSummary.totalDistance }}</div>
+          <div class="text-xs text-neutral-500">Distância Total</div>
         </div>
-        <div v-else class="space-y-3">
-          <div
-            v-for="workout in upcomingWorkouts"
-            :key="workout.id"
-            class="flex items-center gap-4 p-3 rounded bg-dark"
-          >
-            <Icon :name="workout.type === 'swim' ? 'droplet' : 'activity'" :size="20" :class="workout.type === 'swim' ? 'text-neutral-400' : 'text-primary'" />
-            <div class="flex-1 min-w-0">
-              <div class="font-medium text-white truncate">{{ workout.name }}</div>
-              <div class="text-sm text-neutral-500">
-                {{ workout.duration }}min · {{ formatDate(workout.scheduled_date) }}
-              </div>
+        <div class="bg-dark rounded p-3 text-center">
+          <div class="text-lg font-medium text-white">{{ swimSummary.avgPace }}</div>
+          <div class="text-xs text-neutral-500">Ritmo Médio</div>
+        </div>
+        <div class="bg-dark rounded p-3 text-center">
+          <div class="text-lg font-medium text-white">{{ swimSummary.totalSwims }}</div>
+          <div class="text-xs text-neutral-500">Natações</div>
+        </div>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <div class="text-xs text-neutral-500 mb-2">Distância (m)</div>
+          <div class="h-32">
+            <Line :data="swimDistanceChartData" :options="chartOptions('m')" />
+          </div>
+        </div>
+        <div>
+          <div class="text-xs text-neutral-500 mb-2">Ritmo (min/100m)</div>
+          <div class="h-32">
+            <Line :data="swimPaceChartData" :options="chartOptions('min/100m', true)" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="recentActivities.length > 0" class="bg-surface rounded p-5 border border-neutral-800">
+      <div class="flex items-center gap-2 mb-4">
+        <Icon name="clock" :size="18" class="text-neutral-400" />
+        <h3 class="font-medium text-white">Atividades Recentes</h3>
+      </div>
+      <div class="space-y-2">
+        <div
+          v-for="activity in recentActivities"
+          :key="activity.id"
+          class="flex items-center gap-3 p-3 rounded bg-dark"
+        >
+          <Icon :name="activity.type === 'swim' ? 'droplet' : 'activity'" :size="18" :class="activity.type === 'swim' ? 'text-neutral-400' : 'text-primary'" />
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium text-white truncate">{{ activity.name }}</div>
+            <div class="text-xs text-neutral-500">
+              {{ formatDistance(activity.distance) }} · {{ formatDuration(activity.moving_time) }}
             </div>
           </div>
+          <div class="text-xs text-neutral-600">{{ formatDate(activity.start_date) }}</div>
         </div>
       </div>
     </div>
@@ -192,6 +225,18 @@ import { useStravaStore } from '../stores/strava'
 import { useWorkoutStore } from '../stores/workouts'
 import { formatDistance, formatDuration, formatDate } from '../utils/formatters'
 import Icon from '../components/Icon.vue'
+import { Line } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+} from 'chart.js'
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip)
 
 const strava = useStravaStore()
 const workoutStore = useWorkoutStore()
@@ -203,17 +248,17 @@ const today = new Date().toLocaleDateString('pt-BR', {
   year: 'numeric',
 })
 
-const recentActivities = computed(() => strava.activities.slice(0, 5))
-
-const upcomingWorkouts = computed(() =>
-  workoutStore.workouts
-    .filter(w => w.status === 'planned')
-    .slice(0, 5)
-)
+const todayStr = new Date().toISOString().split('T')[0]
 
 const todayWorkout = computed(() => {
-  const todayStr = new Date().toISOString().split('T')[0]
   return workoutStore.workouts.find(w => w.scheduled_date === todayStr && w.status === 'planned') || null
+})
+
+const nextWorkout = computed(() => {
+  return workoutStore.workouts
+    .filter(w => w.scheduled_date >= todayStr && w.status === 'planned')
+    .sort((a, b) => a.scheduled_date.localeCompare(b.scheduled_date))
+    .find(w => w.id !== todayWorkout.value?.id) || null
 })
 
 const weeklyPlan = computed(() => {
@@ -232,22 +277,7 @@ const weeklyPlan = computed(() => {
     .sort((a, b) => a.scheduled_date.localeCompare(b.scheduled_date))
 })
 
-function parsedIntervals(intervals) {
-  if (!intervals) return []
-  if (typeof intervals === 'string') {
-    try { return JSON.parse(intervals) } catch { return [] }
-  }
-  return Array.isArray(intervals) ? intervals : []
-}
-
-function isToday(dateStr) {
-  return dateStr === new Date().toISOString().split('T')[0]
-}
-
-function dayShort(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00')
-  return d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')
-}
+const recentActivities = computed(() => strava.activities.slice(0, 5))
 
 const weekRange = computed(() => {
   const now = new Date()
@@ -282,6 +312,190 @@ const stats = computed(() => {
     { icon: 'clock', label: 'Tempo Nadando', value: formatDuration(totalSwimTime), type: 'swim' },
   ]
 })
+
+const runChartData = computed(() => {
+  const runs = strava.runActivities
+    .filter(a => a.distance > 0)
+    .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
+    .slice(-10)
+
+  return {
+    labels: runs.map(a => {
+      const d = new Date(a.start_date)
+      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+    }),
+    distances: runs.map(a => +(a.distance / 1000).toFixed(2)),
+    paces: runs.map(a => {
+      if (!a.moving_time || !a.distance) return 0
+      const paceSeconds = a.moving_time / (a.distance / 1000)
+      return +(paceSeconds / 60).toFixed(2)
+    }),
+  }
+})
+
+const runSummary = computed(() => {
+  const distances = runChartData.value.distances
+  const paces = runChartData.value.paces.filter(p => p > 0)
+  const totalDist = distances.reduce((s, d) => s + d, 0)
+  const avgPaceVal = paces.length > 0 ? paces.reduce((s, p) => s + p, 0) / paces.length : 0
+  const paceMin = Math.floor(avgPaceVal)
+  const paceSec = Math.round((avgPaceVal - paceMin) * 60)
+  return {
+    totalDistance: totalDist.toFixed(1) + ' km',
+    avgPace: paceMin + ':' + paceSec.toString().padStart(2, '0') + '/km',
+    totalRuns: distances.length,
+  }
+})
+
+const runDistanceChartData = computed(() => ({
+  labels: runChartData.value.labels,
+  datasets: [{
+    data: runChartData.value.distances,
+    borderColor: '#F94101',
+    backgroundColor: 'rgba(249, 65, 1, 0.1)',
+    borderWidth: 2,
+    pointRadius: 3,
+    pointBackgroundColor: '#F94101',
+    tension: 0.3,
+    fill: true,
+  }],
+}))
+
+const runPaceChartData = computed(() => ({
+  labels: runChartData.value.labels,
+  datasets: [{
+    data: runChartData.value.paces,
+    borderColor: '#F97316',
+    backgroundColor: 'rgba(249, 115, 22, 0.1)',
+    borderWidth: 2,
+    pointRadius: 3,
+    pointBackgroundColor: '#F97316',
+    tension: 0.3,
+    fill: true,
+  }],
+}))
+
+const swimChartData = computed(() => {
+  const swims = strava.swimActivities
+    .filter(a => a.distance > 0)
+    .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
+    .slice(-10)
+
+  return {
+    labels: swims.map(a => {
+      const d = new Date(a.start_date)
+      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+    }),
+    distances: swims.map(a => +a.distance.toFixed(0)),
+    paces: swims.map(a => {
+      if (!a.moving_time || !a.distance) return 0
+      const paceSeconds = a.moving_time / (a.distance / 100)
+      return +(paceSeconds / 60).toFixed(2)
+    }),
+  }
+})
+
+const swimSummary = computed(() => {
+  const distances = swimChartData.value.distances
+  const paces = swimChartData.value.paces.filter(p => p > 0)
+  const totalDist = distances.reduce((s, d) => s + d, 0)
+  const avgPaceVal = paces.length > 0 ? paces.reduce((s, p) => s + p, 0) / paces.length : 0
+  const paceMin = Math.floor(avgPaceVal)
+  const paceSec = Math.round((avgPaceVal - paceMin) * 60)
+  return {
+    totalDistance: totalDist + ' m',
+    avgPace: paceMin + ':' + paceSec.toString().padStart(2, '0') + '/100m',
+    totalSwims: distances.length,
+  }
+})
+
+const swimDistanceChartData = computed(() => ({
+  labels: swimChartData.value.labels,
+  datasets: [{
+    data: swimChartData.value.distances,
+    borderColor: '#9CA3AF',
+    backgroundColor: 'rgba(156, 163, 175, 0.1)',
+    borderWidth: 2,
+    pointRadius: 3,
+    pointBackgroundColor: '#9CA3AF',
+    tension: 0.3,
+    fill: true,
+  }],
+}))
+
+const swimPaceChartData = computed(() => ({
+  labels: swimChartData.value.labels,
+  datasets: [{
+    data: swimChartData.value.paces,
+    borderColor: '#6B7280',
+    backgroundColor: 'rgba(107, 114, 128, 0.1)',
+    borderWidth: 2,
+    pointRadius: 3,
+    pointBackgroundColor: '#6B7280',
+    tension: 0.3,
+    fill: true,
+  }],
+}))
+
+function chartOptions(unit, invertY = false) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1A1A1C',
+        titleColor: '#fff',
+        bodyColor: '#9CA3AF',
+        borderColor: '#262628',
+        borderWidth: 1,
+        padding: 8,
+        callbacks: {
+          label: (ctx) => {
+            const val = ctx.parsed.y
+            if (unit === 'min/km' || unit === 'min/100m') {
+              const min = Math.floor(val)
+              const sec = Math.round((val - min) * 60)
+              return min + ':' + sec.toString().padStart(2, '0') + ' ' + unit
+            }
+            return val + ' ' + unit
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        display: false,
+      },
+      y: {
+        display: false,
+        reverse: invertY,
+      },
+    },
+    elements: {
+      line: { borderCapStyle: 'round' },
+    },
+  }
+}
+
+function isToday(dateStr) {
+  return dateStr === todayStr
+}
+
+function dayShort(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00')
+  return d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')
+}
+
+function formatShortDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00')
+  return d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })
+}
+
+function formatDayName(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00')
+  return d.toLocaleDateString('pt-BR', { weekday: 'long' })
+}
 
 onMounted(async () => {
   await workoutStore.fetchWorkouts()
