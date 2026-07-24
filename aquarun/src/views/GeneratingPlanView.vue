@@ -55,6 +55,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useWorkoutStore } from '../stores/workouts'
+import { supabase } from '../utils/supabase'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -98,6 +99,18 @@ async function generatePlan() {
   progress.value = 0
   phaseIndex = 0
   currentMessage.value = messages[0].msg
+
+  const { data: existingWorkouts } = await supabase
+    .from('workouts')
+    .select('id')
+    .eq('user_id', auth.user.id)
+    .limit(1)
+
+  if (existingWorkouts && existingWorkouts.length > 0) {
+    await auth.updateProfile({ current_week: 1 })
+    router.push('/')
+    return
+  }
 
   const interval = 2200
 
