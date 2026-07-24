@@ -10,18 +10,6 @@
       </div>
     </div>
 
-    <div v-if="weeklyPlan.length === 0 && !todayWorkout && currentWeek === 0" class="bg-surface rounded p-8 border border-neutral-800 text-center">
-      <Icon name="zap" :size="32" class="mx-auto text-primary mb-3" />
-      <h3 class="font-medium text-white mb-1">Nenhum plano de treino</h3>
-      <p class="text-sm text-neutral-500 mb-4">Gere seu plano personalizado para começar</p>
-      <router-link
-        to="/generating-plan"
-        class="inline-block px-6 py-2.5 bg-primary hover:bg-primary-dark rounded font-medium transition-colors text-sm"
-      >
-        Gerar Plano
-      </router-link>
-    </div>
-
     <div v-if="todayWorkout && todayWorkout.status === 'planned'" class="bg-surface rounded p-6 border border-neutral-800">
       <div class="flex items-center gap-3 mb-4">
         <Icon
@@ -202,15 +190,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useStravaStore } from '../stores/strava'
 import { useWorkoutStore } from '../stores/workouts'
-import { useAuthStore } from '../stores/auth'
 import { formatDistance, formatDuration, formatDate } from '../utils/formatters'
 import Icon from '../components/Icon.vue'
 
 const strava = useStravaStore()
 const workoutStore = useWorkoutStore()
-const auth = useAuthStore()
-
-const currentWeek = computed(() => auth.profile?.current_week || 0)
 
 const today = new Date().toLocaleDateString('pt-BR', {
   weekday: 'long',

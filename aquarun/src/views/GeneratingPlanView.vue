@@ -148,9 +148,11 @@ async function generatePlan() {
     progress.value = 100
     currentMessage.value = 'Seu treino está pronto!'
 
-    const startDate = auth.profile.start_date
-      ? new Date(auth.profile.start_date + 'T00:00:00')
-      : new Date()
+    const now = new Date()
+    const currentDayOfWeek = now.getDay()
+    const startOfWeek = new Date(now)
+    startOfWeek.setDate(now.getDate() - ((currentDayOfWeek + 6) % 7))
+    startOfWeek.setHours(0, 0, 0, 0)
 
     const dayNameToIndex = {
       domingo: 0, sunday: 0,
@@ -164,7 +166,7 @@ async function generatePlan() {
 
     const indexToDayName = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado']
 
-    const startDayOfWeek = startDate.getDay()
+    const startDayOfWeek = startOfWeek.getDay()
     const runDays = (auth.profile.run_days || []).map(d => dayNameToIndex[d]).filter(d => d !== undefined)
     const swimDays = (auth.profile.swim_days || []).map(d => dayNameToIndex[d]).filter(d => d !== undefined)
 
@@ -178,8 +180,8 @@ async function generatePlan() {
       let daysUntil = (targetDayIdx - startDayOfWeek + 7) % 7
       if (daysUntil === 0) daysUntil = 7
 
-      const scheduledDate = new Date(startDate)
-      scheduledDate.setDate(scheduledDate.getDate() + daysUntil)
+      const scheduledDate = new Date(startOfWeek)
+      scheduledDate.setDate(startOfWeek.getDate() + daysUntil)
 
       let workoutType = workout.type
       if (runDays.includes(targetDayIdx)) {
