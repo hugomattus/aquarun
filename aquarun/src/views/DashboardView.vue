@@ -54,13 +54,69 @@
       <div v-if="todayWorkout.description" class="text-sm text-neutral-400 mb-4">
         {{ todayWorkout.description }}
       </div>
+
+      <div v-if="showDetails && todayWorkout.structure" class="mb-4 space-y-3">
+        <div v-if="todayWorkout.structure.objective" class="bg-dark rounded p-3">
+          <div class="flex items-center gap-2 mb-1">
+            <Icon name="target" :size="14" class="text-primary" />
+            <span class="text-xs font-medium text-white">Objetivo</span>
+          </div>
+          <p class="text-sm text-neutral-400">{{ todayWorkout.structure.objective }}</p>
+        </div>
+        <div v-if="todayWorkout.structure.warmup" class="bg-dark rounded p-3">
+          <div class="flex items-center gap-2 mb-1">
+            <Icon name="thermometer" :size="14" class="text-yellow-500" />
+            <span class="text-xs font-medium text-white">Aquecimento</span>
+          </div>
+          <p class="text-sm text-neutral-400 whitespace-pre-line">{{ todayWorkout.structure.warmup }}</p>
+        </div>
+        <div v-if="todayWorkout.structure.main_part" class="bg-dark rounded p-3">
+          <div class="flex items-center gap-2 mb-1">
+            <Icon name="star" :size="14" class="text-primary" />
+            <span class="text-xs font-medium text-white">Parte Principal</span>
+          </div>
+          <p class="text-sm text-neutral-400 whitespace-pre-line">{{ todayWorkout.structure.main_part }}</p>
+        </div>
+        <div v-if="todayWorkout.structure.cooldown" class="bg-dark rounded p-3">
+          <div class="flex items-center gap-2 mb-1">
+            <Icon name="sun" :size="14" class="text-blue-500" />
+            <span class="text-xs font-medium text-white">Desaquecimento</span>
+          </div>
+          <p class="text-sm text-neutral-400 whitespace-pre-line">{{ todayWorkout.structure.cooldown }}</p>
+        </div>
+        <div v-if="todayWorkout.structure.drills && todayWorkout.structure.drills.length" class="bg-dark rounded p-3">
+          <div class="flex items-center gap-2 mb-1">
+            <Icon name="book-open" :size="14" class="text-green-400" />
+            <span class="text-xs font-medium text-white">Educativos</span>
+          </div>
+          <ul class="space-y-1">
+            <li v-for="(drill, i) in todayWorkout.structure.drills" :key="i" class="text-sm text-neutral-400 flex items-start gap-2">
+              <span class="text-neutral-600">•</span>
+              <span>{{ drill }}</span>
+            </li>
+          </ul>
+        </div>
+        <div v-if="todayWorkout.structure.attention_points && todayWorkout.structure.attention_points.length" class="bg-dark rounded p-3">
+          <div class="flex items-center gap-2 mb-1">
+            <Icon name="eye" :size="14" class="text-purple-400" />
+            <span class="text-xs font-medium text-white">Pontos de Atenção</span>
+          </div>
+          <ul class="space-y-1">
+            <li v-for="(point, i) in todayWorkout.structure.attention_points" :key="i" class="text-sm text-neutral-400 flex items-start gap-2">
+              <span class="text-neutral-600">•</span>
+              <span>{{ point }}</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
       <div class="flex gap-3">
-        <router-link
-          :to="`/workout/${todayWorkout.id}`"
+        <button
+          @click="showDetails = !showDetails"
           class="flex-1 py-2.5 bg-dark hover:bg-dark/80 rounded text-sm font-medium transition-colors text-center text-neutral-300 border border-neutral-800"
         >
-          Ver Detalhes
-        </router-link>
+          {{ showDetails ? 'Fechar' : 'Ver Detalhes' }}
+        </button>
         <router-link
           :to="`/workout/${todayWorkout.id}`"
           class="flex-1 py-2.5 bg-primary hover:bg-primary-dark rounded text-sm font-medium transition-colors text-center"
@@ -137,7 +193,7 @@
           <Icon name="activity" :size="16" class="text-primary" />
           <h3 class="text-sm font-medium text-white">Análise Corrida</h3>
         </div>
-        <p class="text-xs text-neutral-500 mb-3">Últimas {{ runChartData.labels.length }} corridas</p>
+        <p class="text-xs text-neutral-500 mb-3">Esta semana · {{ runChartData.labels.length }} corridas</p>
         <div class="grid grid-cols-3 gap-2 mb-3">
           <div class="bg-dark rounded p-2 text-center">
             <div class="text-sm font-medium text-white">{{ runSummary.totalDistance }}</div>
@@ -173,7 +229,7 @@
           <Icon name="droplet" :size="16" class="text-neutral-400" />
           <h3 class="text-sm font-medium text-white">Análise Natação</h3>
         </div>
-        <p class="text-xs text-neutral-500 mb-3">Últimas {{ swimChartData.labels.length }} piscinas</p>
+        <p class="text-xs text-neutral-500 mb-3">Esta semana · {{ swimChartData.labels.length }} piscinas</p>
         <div class="grid grid-cols-3 gap-2 mb-3">
           <div class="bg-dark rounded p-2 text-center">
             <div class="text-sm font-medium text-white">{{ swimSummary.totalDistance }}</div>
@@ -252,6 +308,8 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, 
 const strava = useStravaStore()
 const workoutStore = useWorkoutStore()
 
+const showDetails = ref(false)
+
 const today = new Date().toLocaleDateString('pt-BR', {
   weekday: 'long',
   day: '2-digit',
@@ -326,9 +384,8 @@ const stats = computed(() => {
 
 const runChartData = computed(() => {
   const runs = strava.runActivities
-    .filter(a => a.distance > 0)
+    .filter(a => a.distance > 0 && isThisWeek(a.start_date))
     .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
-    .slice(-10)
 
   return {
     labels: runs.map(a => {
@@ -388,9 +445,8 @@ const runPaceChartData = computed(() => ({
 
 const swimChartData = computed(() => {
   const swims = strava.swimActivities
-    .filter(a => a.distance > 0)
+    .filter(a => a.distance > 0 && isThisWeek(a.start_date))
     .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
-    .slice(-10)
 
   return {
     labels: swims.map(a => {
