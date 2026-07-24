@@ -252,18 +252,23 @@
             <h3 class="text-sm font-medium text-white mb-5">Como foi o treino?</h3>
 
             <div class="mb-6">
-              <label class="block text-sm text-neutral-400 mb-3">Esforço percebido</label>
-              <div class="grid grid-cols-5 gap-2">
+              <label class="block text-sm text-neutral-400 mb-3">Esforço percebido (1-5)</label>
+              <div class="flex gap-1.5">
                 <button
-                  v-for="opt in effortOptions"
-                  :key="opt.value"
-                  @click="feedback.effort = opt.value"
-                  class="flex flex-col items-center gap-1 p-2 rounded text-center transition-all"
-                  :class="feedback.effort === opt.value ? 'bg-primary text-white' : 'bg-dark text-neutral-400 hover:bg-dark/80'"
+                  v-for="n in 5"
+                  :key="n"
+                  @click="feedback.effort = effortValues[n - 1]"
+                  class="flex-1 h-9 rounded text-sm font-medium transition-all"
+                  :class="feedback.effort === effortValues[n - 1]
+                    ? 'bg-primary text-white'
+                    : 'bg-dark text-neutral-500 hover:bg-dark/80'"
                 >
-                  <span class="text-lg">{{ opt.emoji }}</span>
-                  <span class="text-[10px] leading-tight">{{ opt.label }}</span>
+                  {{ n }}
                 </button>
+              </div>
+              <div class="flex justify-between text-xs text-neutral-600 mt-1">
+                <span>Muito fácil</span>
+                <span>Muito difícil</span>
               </div>
             </div>
 
@@ -292,47 +297,59 @@
               </div>
             </div>
 
-            <div class="grid grid-cols-3 gap-4 mb-6">
+            <div class="space-y-4 mb-6">
               <div>
-                <label class="block text-xs text-neutral-500 mb-2">Energia (0-10)</label>
+                <label class="block text-sm text-neutral-400 mb-2">Energia (0-10)</label>
                 <div class="flex gap-1">
                   <button
                     v-for="n in 11"
                     :key="n - 1"
                     @click="feedback.energy = n - 1"
-                    class="flex-1 h-7 rounded text-xs font-medium transition-all"
+                    class="flex-1 h-8 rounded text-xs font-medium transition-all"
                     :class="feedback.energy === (n - 1) ? 'bg-primary text-white' : 'bg-dark text-neutral-500 hover:bg-dark/80'"
                   >
                     {{ n - 1 }}
                   </button>
                 </div>
+                <div class="flex justify-between text-xs text-neutral-600 mt-1">
+                  <span>Baixa</span>
+                  <span>Alta</span>
+                </div>
               </div>
               <div>
-                <label class="block text-xs text-neutral-500 mb-2">Sono (0-10)</label>
+                <label class="block text-sm text-neutral-400 mb-2">Sono (0-10)</label>
                 <div class="flex gap-1">
                   <button
                     v-for="n in 11"
                     :key="n - 1"
                     @click="feedback.sleep = n - 1"
-                    class="flex-1 h-7 rounded text-xs font-medium transition-all"
+                    class="flex-1 h-8 rounded text-xs font-medium transition-all"
                     :class="feedback.sleep === (n - 1) ? 'bg-primary text-white' : 'bg-dark text-neutral-500 hover:bg-dark/80'"
                   >
                     {{ n - 1 }}
                   </button>
                 </div>
+                <div class="flex justify-between text-xs text-neutral-600 mt-1">
+                  <span>Ruim</span>
+                  <span>Ótimo</span>
+                </div>
               </div>
               <div>
-                <label class="block text-xs text-neutral-500 mb-2">Estresse (0-10)</label>
+                <label class="block text-sm text-neutral-400 mb-2">Estresse (0-10)</label>
                 <div class="flex gap-1">
                   <button
                     v-for="n in 11"
                     :key="n - 1"
                     @click="feedback.stress = n - 1"
-                    class="flex-1 h-7 rounded text-xs font-medium transition-all"
+                    class="flex-1 h-8 rounded text-xs font-medium transition-all"
                     :class="feedback.stress === (n - 1) ? 'bg-primary text-white' : 'bg-dark text-neutral-500 hover:bg-dark/80'"
                   >
                     {{ n - 1 }}
                   </button>
+                </div>
+                <div class="flex justify-between text-xs text-neutral-600 mt-1">
+                  <span>Baixo</span>
+                  <span>Alto</span>
                 </div>
               </div>
             </div>
@@ -374,13 +391,7 @@ const route = useRoute()
 const workoutStore = useWorkoutStore()
 const strava = useStravaStore()
 
-const effortOptions = [
-  { value: 'very_easy', emoji: '😄', label: 'Muito fácil' },
-  { value: 'easy', emoji: '🙂', label: 'Fácil' },
-  { value: 'moderate', emoji: '😐', label: 'Normal' },
-  { value: 'hard', emoji: '😓', label: 'Difícil' },
-  { value: 'very_hard', emoji: '🥵', label: 'Muito difícil' },
-]
+const effortValues = ['very_easy', 'easy', 'moderate', 'hard', 'very_hard']
 
 const effortLabels = {
   very_easy: '😄 Muito fácil',
