@@ -50,18 +50,10 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (data.session) {
         await fetchProfile()
-      } else {
-        const { data: signInData } = await supabase.auth.signInWithPassword({ email, password })
-        if (signInData?.session) {
-          user.value = signInData.user
+        if (!profile.value) {
+          await supabase.from('profiles').insert({ id: data.user.id })
+          await fetchProfile()
         }
-        await new Promise(r => setTimeout(r, 500))
-        await fetchProfile()
-      }
-
-      if (!profile.value) {
-        await supabase.from('profiles').insert({ id: data.user.id }).select().maybeSingle()
-        await fetchProfile()
       }
     }
     return data
@@ -94,6 +86,8 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function updateProfile(data) {
+    if (!user.value) return
+
     const { data: existing } = await supabase
       .from('profiles')
       .select('id')
@@ -101,25 +95,16 @@ export const useAuthStore = defineStore('auth', () => {
       .maybeSingle()
 
     if (existing) {
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update(data)
-        .eq('id', user.value.id)
-      if (updateError) throw updateError
+      await supabase.from('profiles').update(data).eq('id', user.value.id)
     } else {
-      const { error: insertError } = await supabase
-        .from('profiles')
-        .insert({ id: user.value.id, ...data })
-      if (insertError) {
-        if (insertError.code === '23505') {
-          const { error: retryError } = await supabase
-            .from('profiles')
-            .update(data)
-            .eq('id', user.value.id)
-          if (retryError) throw retryError
-        } else {
-          throw insertError
-        }
+      const { error } = await supabase.from('profiles').insert({ id: user.value.id, ...data })
+      if (error && error.code !== '23505') {
+        console.warn('updateProfile insert error:', error.message)
+      }
+    }
+
+    await fetchProfile()
+  }
       }
     }
 
