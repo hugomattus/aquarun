@@ -1,0 +1,42 @@
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end()
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' })
+  }
+
+  try {
+    const { code } = req.body
+
+    if (!code) {
+      return res.status(400).json({ error: 'Code is required' })
+    }
+
+    const response = await fetch('https://www.strava.com/oauth/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: process.env.STRAVA_CLIENT_ID,
+        client_secret: process.env.STRAVA_CLIENT_SECRET,
+        code,
+        grant_type: 'authorization_code',
+      }),
+    })
+
+    const data = await response.json()
+
+    if (data.errors) {
+      return res.status(400).json({ error: data.message || 'Strava auth error' })
+    }
+
+    return res.status(200).json(data)
+  } catch (error) {
+    return res.status(500).json({ error: error.message })
+  }
+}

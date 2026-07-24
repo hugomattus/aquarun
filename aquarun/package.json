@@ -1,0 +1,29 @@
+{
+  "name": "aquarun",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "dev:vite": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@supabase/supabase-js": "^2.110.8",
+    "dotenv": "^17.4.2",
+    "feather-icons": "^4.29.2",
+    "pinia": "^4.0.2",
+    "vue": "^3.5.39",
+    "vue-router": "^5.2.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitejs/plugin-vue": "^6.0.7",
+    "express": "^5.2.1",
+    "sharp-cli": "^5.2.0",
+    "tailwindcss": "^4.3.3",
+    "vite": "^8.1.1"
+  }
+}

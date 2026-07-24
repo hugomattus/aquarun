@@ -1,0 +1,231 @@
+<template>
+  <div class="space-y-8">
+    <div>
+      <h1 class="text-2xl font-medium text-white">Meu Treino</h1>
+      <p class="text-neutral-500 mt-1">Seu plano de treino atual</p>
+    </div>
+
+    <div v-if="currentWeek === 0" class="bg-surface rounded p-12 border border-neutral-800 text-center">
+      <Icon name="award" :size="48" class="mx-auto text-neutral-600 mb-4" />
+      <h3 class="text-xl font-medium text-white mt-4">Nenhum plano ativo</h3>
+      <p class="text-neutral-500 mt-2">Gere seu primeiro plano na tela de onboarding</p>
+    </div>
+
+    <template v-else>
+      <div class="bg-surface rounded p-6 border border-neutral-800">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="font-medium text-white">Semana {{ currentWeek }}</h3>
+            <p class="text-sm text-neutral-500">{{ weekProgress.completed }}/{{ weekProgress.total }} treinos concluídos</p>
+          </div>
+          <div class="text-right">
+            <div class="text-2xl font-medium text-primary">{{ weekProgress.percentage }}%</div>
+            <div class="text-xs text-neutral-500">progresso</div>
+          </div>
+        </div>
+        <div class="w-full bg-dark rounded-full h-2">
+          <div
+            class="bg-primary h-2 rounded-full transition-all duration-500"
+            :style="{ width: weekProgress.percentage + '%' }"
+          />
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <router-link
+          v-for="workout in weekWorkouts"
+          :key="workout.id"
+          :to="workout.status === 'planned' ? `/workout/${workout.id}` : '#'"
+          class="flex items-center gap-4 p-4 rounded bg-surface border border-neutral-800 transition-colors"
+          :class="workout.status === 'planned' ? 'hover:bg-surface-light cursor-pointer' : ''"
+        >
+          <div
+            class="w-10 h-10 rounded flex items-center justify-center flex-shrink-0"
+            :class="workout.status === 'completed' ? 'bg-green-500/10' : workout.type === 'swim' ? 'bg-neutral-800' : 'bg-primary/10'"
+          >
+            <Icon
+              :name="workout.status === 'completed' ? 'check-circle' : workout.type === 'swim' ? 'droplet' : 'activity'"
+              :size="20"
+              :class="workout.status === 'completed' ? 'text-green-500' : workout.type === 'swim' ? 'text-neutral-400' : 'text-primary'"
+            />
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="font-medium text-white">{{ workout.name }}</span>
+              <span class="text-xs text-neutral-600">{{ dayShort(workout.scheduled_date) }}</span>
+            </div>
+            <div class="text-sm text-neutral-500">
+              {{ workout.duration }}min
+              <span v-if="workout.actual_distance"> · {{ formatDistance(workout.actual_distance) }}</span>
+              <span v-if="workout.feedback_exhaustion"> · cansaço {{ workout.feedback_exhaustion }}/10</span>
+            </div>
+          </div>
+          <div class="flex-shrink-0">
+            <span
+              v-if="workout.status === 'completed'"
+              class="text-xs text-green-500"
+            >
+              Concluído
+            </span>
+            <span
+              v-else-if="workout.status === 'skipped'"
+              class="text-xs text-neutral-500"
+            >
+              Pulado
+            </span>
+            <Icon v-else name="chevron-right" :size="18" class="text-neutral-600" />
+          </div>
+        </router-link>
+      </div>
+
+      <div v-if="weekProgress.allDone" class="bg-surface rounded p-6 border border-neutral-800">
+        <div class="text-center">
+          <Icon name="check-circle" :size="32" class="mx-auto text-green-500 mb-3" />
+          <h3 class="font-medium text-white mb-1">Semana Concluída!</h3>
+          <p class="text-sm text-neutral-500 mb-4">Todos os treinos desta semana foram concluídos</p>
+          <button
+            @click="generateNextWeek"
+            :disabled="generating"
+            class="px-6 py-2.5 bg-primary hover:bg-primary-dark disabled:opacity-50 rounded font-medium transition-colors text-sm"
+          >
+            {{ generating ? 'Gerando...' : 'Gerar Próxima Semana' }}
+          </button>
+        </div>
+      </div>
+    </template>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useAuthStore } from '../stores/auth'
+import { useWorkoutStore } from '../stores/workouts'
+import { formatDistance } from '../utils/formatters'
+import Icon from '../components/Icon.vue'
+
+const auth = useAuthStore()
+const workoutStore = useWorkoutStore()
+const generating = ref(false)
+
+const currentWeek = computed(() => auth.profile?.current_week || 0)
+
+const weekWorkouts = computed(() =>
+  workoutStore.getWeekWorkouts(currentWeek.value)
+)
+
+const weekProgress = computed(() => {
+  const total = weekWorkouts.value.length
+  const completed = weekWorkouts.value.filter(w => w.status === 'completed').length
+  return {
+    total,
+    completed,
+    percentage: total > 0 ? Math.round((completed / total) * 100) : 0,
+    allDone: total > 0 && completed === total,
+  }
+})
+
+function dayShort(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00')
+  return d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')
+}
+
+async function generateNextWeek() {
+  generating.value = true
+  try {
+    const weekStats = workoutStore.getWeekStats(currentWeek.value)
+
+    const response = await fetch('/api/adaptive-plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        profile: auth.profile,
+        previousWeek: {
+          total_workouts: weekStats.total,
+          completed_workouts: weekStats.completed,
+          skipped_workouts: weekStats.skipped,
+          total_run_distance: weekStats.runDistance,
+          total_swim_distance: weekStats.swimDistance,
+          total_run_time: weekStats.runTime,
+          total_swim_time: weekStats.swimTime,
+          avg_exhaustion: weekStats.avgExhaustion,
+          avg_heartrate: weekStats.avgHeartrate,
+          pain_report: weekStats.painReports.join('; ') || null,
+        },
+        weekNumber: currentWeek.value + 1,
+      }),
+    })
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      throw new Error(err.error || 'Erro ao gerar plano')
+    }
+
+    const plan = await response.json()
+
+    const today = new Date()
+    const startOfWeek = new Date(today)
+    startOfWeek.setDate(today.getDate() - ((today.getDay() + 6) % 7))
+
+    const dayNameToIndex = {
+      domingo: 0, sunday: 0,
+      segunda: 1, monday: 1,
+      terça: 2, tuesday: 2,
+      quarta: 3, wednesday: 3,
+      quinta: 4, thursday: 4,
+      sexta: 5, friday: 5,
+      sábado: 6, saturday: 6,
+    }
+
+    const runDays = (auth.profile.run_days || []).map(d => dayNameToIndex[d]).filter(d => d !== undefined)
+    const swimDays = (auth.profile.swim_days || []).map(d => dayNameToIndex[d]).filter(d => d !== undefined)
+
+    const nextWeek = plan.week || []
+    const nextWeekNumber = currentWeek.value + 1
+
+    for (const workout of nextWeek) {
+      const targetDayIdx = dayNameToIndex[workout.day.toLowerCase()]
+      if (targetDayIdx === undefined) continue
+      if (workout.type === 'rest') continue
+
+      let daysUntil = (targetDayIdx - startOfWeek.getDay() + 7) % 7
+      if (daysUntil === 0) daysUntil = 7
+
+      const scheduledDate = new Date(startOfWeek)
+      scheduledDate.setDate(startOfWeek.getDate() + daysUntil)
+
+      let workoutType = workout.type
+      if (runDays.includes(targetDayIdx)) {
+        workoutType = 'run'
+      } else if (swimDays.includes(targetDayIdx)) {
+        workoutType = 'swim'
+      }
+
+      await workoutStore.createWorkout({
+        type: workoutType,
+        name: workout.name,
+        description: workout.description || '',
+        scheduled_date: scheduledDate.toISOString().split('T')[0],
+        duration: workout.duration,
+        intervals: JSON.stringify(workout.intervals || []),
+        week_number: nextWeekNumber,
+      })
+    }
+
+    await auth.updateProfile({ current_week: nextWeekNumber })
+
+    await workoutStore.saveWeekLog(
+      currentWeek.value,
+      weekWorkouts.value[0]?.scheduled_date,
+      weekWorkouts.value[weekWorkouts.value.length - 1]?.scheduled_date,
+    )
+  } catch (e) {
+    console.error('Erro ao gerar próxima semana:', e)
+  } finally {
+    generating.value = false
+  }
+}
+
+onMounted(async () => {
+  await workoutStore.fetchWorkouts()
+})
+</script>
