@@ -118,8 +118,6 @@ const currentWeekWorkouts = computed(() => {
     .sort((a, b) => a.scheduled_date.localeCompare(b.scheduled_date))
 })
 
-const weekStats = computed(() => workoutStore.getWeekStats(0))
-
 async function sendMessage(text) {
   const userMsg = text || input.value.trim()
   if (!userMsg) return
@@ -133,11 +131,20 @@ async function sendMessage(text) {
 
   try {
     const history = messages.value.slice(0, -1)
+    const workouts = currentWeekWorkouts.value
+    const completed = workouts.filter(w => w.status === 'completed')
+    const effortMap = { very_easy: 1, easy: 2, moderate: 3, hard: 4, very_hard: 5 }
     const context = {
       profile: auth.profile,
-      currentWeekWorkouts: currentWeekWorkouts.value,
+      currentWeekWorkouts: workouts,
       recentActivities: strava.activities.slice(0, 5),
-      weekStats: weekStats.value,
+      weekStats: {
+        total: workouts.length,
+        completed: completed.length,
+        runDistance: completed.filter(w => w.type === 'run').reduce((s, w) => s + (w.actual_distance || 0), 0),
+        swimDistance: completed.filter(w => w.type === 'swim').reduce((s, w) => s + (w.actual_distance || 0), 0),
+        avgEffort: completed.length > 0 ? (completed.reduce((s, w) => s + (effortMap[w.feedback_effort] || 0), 0) / completed.length).toFixed(1) : null,
+      },
     }
     const response = await getAIResponse(userMsg, history, context)
     messages.value.push({ role: 'assistant', content: response })
