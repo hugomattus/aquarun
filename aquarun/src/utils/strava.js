@@ -44,7 +44,7 @@ export async function refreshToken(refreshTokenValue) {
     ? 'http://localhost:5173'
     : window.location.origin
 
-  const response = await fetch(`${baseUrl}/api/strava/refresh`, {
+  const response = await fetch(`${baseUrl}/api/strava-refresh`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refresh_token: refreshTokenValue }),
