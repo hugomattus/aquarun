@@ -196,6 +196,8 @@ async function generateNextWeek() {
     const startOfWeek = new Date(today)
     startOfWeek.setDate(today.getDate() - ((today.getDay() + 6) % 7))
 
+    const weekOffset = (nextWeekNumber - 1) * 7
+
     const dayNameToIndex = {
       domingo: 0, sunday: 0,
       segunda: 1, monday: 1,
@@ -221,7 +223,7 @@ async function generateNextWeek() {
       if (daysUntil === 0) daysUntil = 7
 
       const scheduledDate = new Date(startOfWeek)
-      scheduledDate.setDate(startOfWeek.getDate() + daysUntil)
+      scheduledDate.setDate(startOfWeek.getDate() + daysUntil + weekOffset)
 
       let workoutType = workout.type
       if (runDays.includes(targetDayIdx)) {
