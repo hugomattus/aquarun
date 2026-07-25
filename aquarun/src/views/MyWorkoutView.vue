@@ -8,7 +8,21 @@
     <div v-if="currentWeek === 0" class="bg-surface rounded p-12 border border-neutral-800 text-center">
       <Icon name="award" :size="48" class="mx-auto text-neutral-600 mb-4" />
       <h3 class="text-xl font-medium text-white mt-4">Nenhum plano ativo</h3>
-      <p class="text-neutral-500 mt-2">Gere seu primeiro plano na tela de onboarding</p>
+      <p class="text-neutral-500 mt-2 mb-6">Crie seu plano de treino personalizado</p>
+      <router-link
+        v-if="hasOnboardingData"
+        to="/generating-plan"
+        class="inline-block px-6 py-2.5 bg-primary hover:bg-primary-dark rounded font-medium transition-colors text-sm"
+      >
+        Gerar Meu Plano
+      </router-link>
+      <router-link
+        v-else
+        to="/onboarding"
+        class="inline-block px-6 py-2.5 bg-primary hover:bg-primary-dark rounded font-medium transition-colors text-sm"
+      >
+        Fazer Onboarding
+      </router-link>
     </div>
 
     <template v-else>
@@ -111,6 +125,11 @@ const workoutStore = useWorkoutStore()
 const generating = ref(false)
 
 const currentWeek = computed(() => auth.profile?.current_week || 0)
+
+const hasOnboardingData = computed(() => {
+  const p = auth.profile
+  return p?.run_days?.length > 0 || p?.swim_days?.length > 0
+})
 
 const weekWorkouts = computed(() =>
   workoutStore.getWeekWorkouts(currentWeek.value)
