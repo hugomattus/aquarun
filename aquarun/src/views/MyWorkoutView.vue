@@ -255,7 +255,7 @@ async function generateNextWeek() {
         type: workoutType,
         name: workout.name,
         description: workout.description || '',
-        scheduled_date: scheduledDate.toISOString().split('T')[0],
+        scheduled_date: scheduledDate.toLocaleDateString('sv-SE'),
         duration: workout.duration,
         intervals: JSON.stringify(workout.intervals || []),
         structure: workout.structure || null,

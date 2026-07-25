@@ -376,7 +376,7 @@ const today = new Date().toLocaleDateString('pt-BR', {
   year: 'numeric',
 })
 
-const todayStr = new Date().toISOString().split('T')[0]
+const todayStr = new Date().toLocaleDateString('sv-SE')
 
 const todayWorkout = computed(() => {
   return workoutStore.workouts.find(w => w.scheduled_date === todayStr) || null
@@ -397,8 +397,8 @@ const weeklyPlan = computed(() => {
   const sunday = new Date(monday)
   sunday.setDate(monday.getDate() + 6)
 
-  const mondayStr = monday.toISOString().split('T')[0]
-  const sundayStr = sunday.toISOString().split('T')[0]
+  const mondayStr = monday.toLocaleDateString('sv-SE')
+  const sundayStr = sunday.toLocaleDateString('sv-SE')
 
   return workoutStore.workouts
     .filter(w => w.scheduled_date >= mondayStr && w.scheduled_date <= sundayStr)
