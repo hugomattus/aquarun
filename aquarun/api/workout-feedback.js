@@ -54,8 +54,9 @@ REGRAS:
     systemPrompt += `\n\nTREINO ATUAL:
 - Nome: ${workout.name} (${workout.type === 'swim' ? 'Natação' : 'Corrida'})
 - Duração planejada: ${workout.duration}min
-- Dados reais:
+- Dados informados pelo atleta:
 ${perfLines.length ? perfLines.map(l => `  ${l}`).join('\n') : '  Sem dados de performance'}
+IMPORTANTE: Os dados acima foram preenchidos manualmente pelo atleta ao concluir o treino. O ritmo é o que ele informou, não uma estimativa.
 
 FEEDBACK DO ATLETA:
 - Esforço percebido: ${effortLabel[feedback.effort] || 'Não informado'} (${effortNum}/5)
@@ -66,7 +67,7 @@ FEEDBACK DO ATLETA:
 ${feedback.notes ? `- Observações: ${feedback.notes}` : ''}`
 
     if (recentWorkouts?.length) {
-      systemPrompt += `\n\nHISTÓRICO DE TREINOS RECENTES (mesmo tipo):`
+      systemPrompt += `\n\nHISTÓRICO DE TREINOS RECENTES (mesmo tipo) - dados preenchidos pelo atleta:`
       for (const rw of recentWorkouts.slice(0, 8)) {
         const rwPace = rw.actual_pace ? `${Math.floor(rw.actual_pace / 60)}:${Math.floor(rw.actual_pace % 60).toString().padStart(2, '0')}/km` : 'sem ritmo'
         const rwDist = rw.actual_distance ? `${(rw.actual_distance / 1000).toFixed(2)}km` : 'sem distância'
