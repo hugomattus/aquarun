@@ -24,6 +24,17 @@ REGRAS:
 - Máximo 3 pontos positivos e 2 negativos
 - A dica deve ser aplicável no próximo treino`
 
+    function calcZones(fcMax) {
+      if (!fcMax || fcMax < 100 || fcMax > 230) return null
+      return {
+        z1: `${Math.round(fcMax * 0.50)}-${Math.round(fcMax * 0.60)} bpm (Recuperação)`,
+        z2: `${Math.round(fcMax * 0.60)}-${Math.round(fcMax * 0.70)} bpm (Aeróbico base)`,
+        z3: `${Math.round(fcMax * 0.70)}-${Math.round(fcMax * 0.80)} bpm (Aeróbico/limiar)`,
+        z4: `${Math.round(fcMax * 0.80)}-${Math.round(fcMax * 0.90)} bpm (Limiar)`,
+        z5: `${Math.round(fcMax * 0.90)}-${fcMax} bpm (VO2max)`,
+      }
+    }
+
     if (profile) {
       const age = profile.birth_date
         ? Math.floor((Date.now() - new Date(profile.birth_date).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
@@ -36,8 +47,23 @@ REGRAS:
 - Experiência: ${profile.running_experience || 'não informado'}
 - Ritmo confortável: ${profile.comfortable_pace || 'não informado'}
 - Ritmo-alvo: ${profile.target_run_pace || 'não informado'}
+- FC Máxima: ${profile.fc_max ? profile.fc_max + ' bpm' : 'não informado'}
+- VO2max estimado: ${profile.vo2_max ? profile.vo2_max + ' ml/kg/min' : 'não informado'}
+- Data da prova: ${profile.race_date || 'não informado'}
 - Lesões atuais: ${profile.current_injuries || 'nenhuma'}
 - Histórico de lesões: ${profile.injury_history || 'nenhum'}`
+
+      if (profile.fc_max) {
+        const zones = calcZones(profile.fc_max)
+        if (zones) {
+          systemPrompt += `\n\nZONAS DE FC:
+- Zona 1: ${zones.z1}
+- Zona 2: ${zones.z2}
+- Zona 3: ${zones.z3}
+- Zona 4: ${zones.z4}
+- Zona 5: ${zones.z5}`
+        }
+      }
     }
 
     let perfLines = []
@@ -50,6 +76,8 @@ REGRAS:
     }
     if (performance?.heartrate) perfLines.push(`BPM médio: ${Math.round(performance.heartrate)}`)
     if (performance?.maxHeartrate) perfLines.push(`BPM máx: ${Math.round(performance.maxHeartrate)}`)
+    if (performance?.elevation) perfLines.push(`Elevação: ${Math.round(performance.elevation)}m`)
+    if (performance?.cadence) perfLines.push(`Cadência: ${Math.round(performance.cadence)}spm`)
 
     systemPrompt += `\n\nTREINO ATUAL:
 - Nome: ${workout.name} (${workout.type === 'swim' ? 'Natação' : 'Corrida'})

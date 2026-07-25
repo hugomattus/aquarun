@@ -591,6 +591,8 @@ async function completeWorkout() {
       pace: selectedActivity.value.moving_time > 0 && selectedActivity.value.distance > 0 ? (selectedActivity.value.moving_time * 1000 / selectedActivity.value.distance) : null,
       heartrate: selectedActivity.value.average_heartrate,
       maxHeartrate: selectedActivity.value.max_heartrate,
+      elevation: selectedActivity.value.total_elevation_gain,
+      cadence: selectedActivity.value.average_cadence,
     } : manualData.value.distance || manualData.value.duration ? {
       distance: manualData.value.distance ? parseFloat(manualData.value.distance) * 1000 : null,
       duration: manualData.value.duration ? (() => {
@@ -613,7 +615,7 @@ async function completeWorkout() {
         workout: { name: workout.value.name, type: workout.value.type, duration: workout.value.duration },
         feedback: feedback.value,
         performance: perfData,
-        profile: auth.profile,
+        profile: workoutStore.getEnrichedProfile(auth.profile),
         recentWorkouts: workoutStore.getRecentWorkouts(workout.value.type, 8),
         weekStats: (() => {
           const currentWeek = auth.profile?.current_week || 1
@@ -628,6 +630,9 @@ async function completeWorkout() {
             avgEnergy: ws.avgEnergy || null,
             avgSleep: ws.avgSleep || null,
             avgStress: ws.avgStress || null,
+            totalElevation: ws.totalElevation || 0,
+            avgHeartrate: ws.avgHeartrate || null,
+            avgMaxHeartrate: ws.avgMaxHeartrate || null,
           }
         })(),
         trends: workoutStore.getTrends(auth.profile?.current_week || 1),

@@ -30,6 +30,17 @@ export default async function handler(req, res) {
     const allDaysLabels = (profile.training_weekdays || []).map(d => daysOfWeek[d] || d).join(', ')
     const longRunLabel = daysOfWeek[profile.long_run_day] || profile.long_run_day || 'não definido'
 
+    function calcZones(fcMax) {
+      if (!fcMax || fcMax < 100 || fcMax > 230) return null
+      return {
+        z1: `${Math.round(fcMax * 0.50)}-${Math.round(fcMax * 0.60)} bpm (Recuperação)`,
+        z2: `${Math.round(fcMax * 0.60)}-${Math.round(fcMax * 0.70)} bpm (Aeróbico base)`,
+        z3: `${Math.round(fcMax * 0.70)}-${Math.round(fcMax * 0.80)} bpm (Aeróbico/limiar)`,
+        z4: `${Math.round(fcMax * 0.80)}-${Math.round(fcMax * 0.90)} bpm (Limiar)`,
+        z5: `${Math.round(fcMax * 0.90)}-${fcMax} bpm (VO2max)`,
+      }
+    }
+
     let raceInfo = ''
     if (profile.race_date) {
       const raceDate = new Date(profile.race_date)
@@ -53,7 +64,8 @@ REGRAS FUNDAMENTAIS:
 7. Considere idade, peso, experiência e nível de atividade
 8. Se há data de prova, faça periodização com tapering
 9. Natação: APENAS crawl. Nunca gerar peito, costas, borboleta ou medley
-10. Retorne APENAS JSON válido
+10. Se FC máxima foi informada, USE as zonas de FC para prescrever intensidade (ex: "trote em Zona 2", "tiros em Zona 4")
+11. Retorne APENAS JSON válido
 
 TIPOS DE TREINO CORRIDA:
 - regenerativo: recuperação ativa, ritmo bem leve
@@ -128,6 +140,15 @@ EXPERIÊNCIA E NÍVEL:
 - Ritmo atual: ${profile.comfortable_pace || 'não informado'}
 - Ritmo-alvo: ${profile.target_run_pace || 'não informado'}
 - Distância-alvo corrida: ${profile.target_run_distance || 'não informado'}
+- FC Máxima: ${profile.fc_max ? profile.fc_max + ' bpm' : 'não informado'}
+- VO2max estimado: ${profile.vo2_max ? profile.vo2_max + ' ml/kg/min' : 'não informado'}
+${profile.fc_max ? (() => { const z = calcZones(profile.fc_max); return z ? `- Zonas de FC (USE para prescrever intensidade):
+  Z1 (Recuperação): ${z.z1}
+  Z2 (Aeróbico base): ${z.z2}
+  Z3 (Aeróbico/limiar): ${z.z3}
+  Z4 (Limiar): ${z.z4}
+  Z5 (VO2max): ${z.z5}
+IMPORTANTE: Ao prescrever intensidade, use as ZONAS DE FC acima. Por exemplo: "trote em Zona 2", "tiros em Zona 4-5", "aquecimento em Zona 1".` : '' })() : ''}
 
 NATAÇÃO${hasSwimming ? ' (PRATICA)' : ' (NÃO PRATICA)'}:
 ${hasSwimming ? `- Experiência: ${profile.swimming_experience}

@@ -237,6 +237,13 @@
               placeholder="Ex: Losartana, hipertensão... (ou deixe vazio)"></textarea>
           </div>
 
+          <div>
+            <label class="field-label">FC Máxima (bpm)</label>
+            <input v-model.number="form.fcMax" type="number" min="100" max="230" class="input-field"
+              placeholder="Ex: 185 (se não souber, deixe vazio)" />
+            <p class="text-xs text-neutral-600 mt-1">Usado para calcular zonas de treino. Se não souber, deixe vazio — vamos estimar com base nos dados do Strava.</p>
+          </div>
+
           <div class="nav-buttons">
             <button type="button" @click="step--" class="btn-secondary">Voltar</button>
             <button type="submit" class="btn-primary">Próximo</button>
@@ -444,6 +451,7 @@ const form = ref({
   currentInjuries: '',
   injuryHistory: '',
   medications: '',
+  fcMax: null,
   swimmingExperience: '',
   swimmingFrequency: '',
   mainStroke: '',
@@ -651,6 +659,7 @@ async function handleSubmit() {
       current_injuries: form.value.currentInjuries || null,
       injury_history: form.value.injuryHistory || null,
       medications: form.value.medications || null,
+      fc_max: form.value.fcMax || null,
       chronic_diseases: null,
       physical_limitations: null,
       swimming_experience: form.value.swimmingExperience,

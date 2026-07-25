@@ -137,7 +137,7 @@ async function sendMessage(text) {
     const currentWeek = auth.profile?.current_week || 1
     const context = {
       today: new Date().toLocaleDateString('sv-SE'),
-      profile: auth.profile,
+      profile: workoutStore.getEnrichedProfile(auth.profile),
       currentWeekWorkouts: workouts,
       recentActivities: strava.activities.slice(0, 5),
       weekStats: {
@@ -150,6 +150,15 @@ async function sendMessage(text) {
         avgEnergy: completed.length > 0 ? (completed.reduce((s, w) => s + (w.feedback_energy || 0), 0) / completed.length).toFixed(1) : null,
         avgSleep: completed.length > 0 ? (completed.reduce((s, w) => s + (w.feedback_sleep || 0), 0) / completed.length).toFixed(1) : null,
         avgStress: completed.length > 0 ? (completed.reduce((s, w) => s + (w.feedback_stress || 0), 0) / completed.length).toFixed(1) : null,
+        totalElevation: completed.filter(w => w.type === 'run').reduce((s, w) => s + (w.actual_elevation || 0), 0),
+        avgHeartrate: (() => {
+          const hrRuns = completed.filter(w => w.type === 'run' && w.actual_heartrate)
+          return hrRuns.length > 0 ? Math.round(hrRuns.reduce((s, w) => s + w.actual_heartrate, 0) / hrRuns.length) : null
+        })(),
+        avgMaxHeartrate: (() => {
+          const mhrRuns = completed.filter(w => w.type === 'run' && w.actual_max_heartrate)
+          return mhrRuns.length > 0 ? Math.round(mhrRuns.reduce((s, w) => s + w.actual_max_heartrate, 0) / mhrRuns.length) : null
+        })(),
       },
       trends: workoutStore.getTrends(currentWeek),
     }

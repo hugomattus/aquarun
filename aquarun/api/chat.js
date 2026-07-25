@@ -26,6 +26,17 @@ Suas responsabilidades:
 
 Responda sempre em português brasileiro. Seja direto, prático e motivador como um treinador pessoal de verdade.`
 
+    function calcZones(fcMax) {
+      if (!fcMax || fcMax < 100 || fcMax > 230) return null
+      return {
+        z1: `${Math.round(fcMax * 0.50)}-${Math.round(fcMax * 0.60)} bpm (Recuperação)`,
+        z2: `${Math.round(fcMax * 0.60)}-${Math.round(fcMax * 0.70)} bpm (Aeróbico base)`,
+        z3: `${Math.round(fcMax * 0.70)}-${Math.round(fcMax * 0.80)} bpm (Aeróbico/limiar)`,
+        z4: `${Math.round(fcMax * 0.80)}-${Math.round(fcMax * 0.90)} bpm (Limiar)`,
+        z5: `${Math.round(fcMax * 0.90)}-${fcMax} bpm (VO2max)`,
+      }
+    }
+
     if (context) {
       if (context.profile) {
         const p = context.profile
@@ -42,11 +53,26 @@ Responda sempre em português brasileiro. Seja direto, prático e motivador como
 - Ritmo confortável: ${p.comfortable_pace || 'Não informado'}
 - Ritmo-alvo: ${p.target_run_pace || 'Não informado'}
 - Distância-alvo: ${p.target_run_distance || 'Não informado'}
+- FC Máxima: ${p.fc_max ? p.fc_max + ' bpm' : 'não informado'}
+- VO2max estimado: ${p.vo2_max ? p.vo2_max + ' ml/kg/min' : 'não informado'}
+- Data da prova: ${p.race_date || 'não informado'}
 - Dias de corrida: ${(p.run_days || []).join(', ') || 'Não definido'}
 - Dias de natação: ${(p.swim_days || []).join(', ') || 'Não definido'}
 - Lesões atuais: ${p.current_injuries || 'nenhuma'}
 - Histórico de lesões: ${p.injury_history || 'nenhum'}
 - Medicamentos: ${p.medications || 'nenhum'}`
+
+        if (p.fc_max) {
+          const zones = calcZones(p.fc_max)
+          if (zones) {
+            systemPrompt += `\n\nZONAS DE FC (baseadas em FC max ${p.fc_max} bpm):
+- Zona 1: ${zones.z1}
+- Zona 2: ${zones.z2}
+- Zona 3: ${zones.z3}
+- Zona 4: ${zones.z4}
+- Zona 5: ${zones.z5}`
+          }
+        }
       }
 
       if (context.currentWeekWorkouts?.length) {
@@ -65,7 +91,10 @@ Responda sempre em português brasileiro. Seja direto, prático e motivador como
               const sec = Math.floor(w.actual_pace % 60)
               systemPrompt += ` | Ritmo: ${min}:${sec.toString().padStart(2, '0')}/km`
             }
-            if (w.actual_heartrate) systemPrompt += ` | BPM: ${Math.round(w.actual_heartrate)}`
+            if (w.actual_heartrate) systemPrompt += ` | BPM médio: ${Math.round(w.actual_heartrate)}`
+            if (w.actual_max_heartrate) systemPrompt += ` | BPM máx: ${Math.round(w.actual_max_heartrate)}`
+            if (w.actual_elevation) systemPrompt += ` | Elevação: ${Math.round(w.actual_elevation)}m`
+            if (w.actual_cadence) systemPrompt += ` | Cadência: ${Math.round(w.actual_cadence)}spm`
             const effortMap = { very_easy: 'Muito fácil', easy: 'Fácil', moderate: 'Normal', hard: 'Difícil', very_hard: 'Muito difícil' }
             if (w.feedback_effort) systemPrompt += ` | Esforço: ${effortMap[w.feedback_effort] || w.feedback_effort}`
             if (w.feedback_energy) systemPrompt += ` | Energia: ${w.feedback_energy}/5`
@@ -87,7 +116,8 @@ Responda sempre em português brasileiro. Seja direto, prático e motivador como
             return `${Math.floor(p / 60)}:${Math.floor(p % 60).toString().padStart(2, '0')}/km`
           })() : ''
           const hr = a.average_heartrate ? ` | BPM: ${Math.round(a.average_heartrate)}` : ''
-          systemPrompt += `\n- ${a.name} (${a.type === 'swim' ? 'Natação' : 'Corrida'}) - ${dist} - ${time} - ${pace}${hr}`
+          const elev = a.total_elevation_gain ? ` | Elev: ${Math.round(a.total_elevation_gain)}m` : ''
+          systemPrompt += `\n- ${a.name} (${a.type === 'swim' ? 'Natação' : 'Corrida'}) - ${dist} - ${time} - ${pace}${hr}${elev}`
         }
       }
 
@@ -97,6 +127,9 @@ Responda sempre em português brasileiro. Seja direto, prático e motivador como
 - Total de treinos: ${s.completed}/${s.total} concluídos
 - Distância corrida: ${s.runDistance ? (s.runDistance / 1000).toFixed(2) + 'km' : '0km'}
 - Distância nadada: ${s.swimDistance ? (s.swimDistance / 1000).toFixed(2) + 'km' : '0km'}
+- Elevação total: ${s.totalElevation ? Math.round(s.totalElevation) + 'm' : 'não informado'}
+- BPM médio corrida: ${s.avgHeartrate ? Math.round(s.avgHeartrate) : 'não informado'}
+- BPM máx médio corrida: ${s.avgMaxHeartrate ? Math.round(s.avgMaxHeartrate) : 'não informado'}
 - Esforço médio: ${s.avgEffort || 'Não informado'}
 - Dor média: ${s.avgPain || 0}/10
 - Energia média: ${s.avgEnergy || 0}/5

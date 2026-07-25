@@ -132,7 +132,7 @@ async function generatePlan() {
     const response = await fetch('/api/workout-plan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ profile: auth.profile }),
+      body: JSON.stringify({ profile: workoutStore.getEnrichedProfile(auth.profile) }),
     })
 
     if (!response.ok) {

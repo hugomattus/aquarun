@@ -220,6 +220,16 @@ export const useWorkoutStore = defineStore('workouts', () => {
       avgHeartrate: runs.length > 0
         ? runs.reduce((sum, w) => sum + (w.actual_heartrate || 0), 0) / runs.length
         : 0,
+      avgMaxHeartrate: runs.length > 0
+        ? runs.filter(w => w.actual_max_heartrate).reduce((sum, w) => sum + w.actual_max_heartrate, 0) / (runs.filter(w => w.actual_max_heartrate).length || 1)
+        : 0,
+      avgElevation: runs.length > 0
+        ? runs.reduce((sum, w) => sum + (w.actual_elevation || 0), 0) / runs.length
+        : 0,
+      avgCadence: runs.length > 0
+        ? runs.filter(w => w.actual_cadence).reduce((sum, w) => sum + w.actual_cadence, 0) / (runs.filter(w => w.actual_cadence).length || 1)
+        : 0,
+      totalElevation: runs.reduce((sum, w) => sum + (w.actual_elevation || 0), 0),
       avgRunPace: runs.length > 0
         ? runs.filter(w => w.actual_pace).reduce((sum, w) => sum + w.actual_pace, 0) / runs.filter(w => w.actual_pace).length
         : 0,
@@ -347,6 +357,54 @@ export const useWorkoutStore = defineStore('workouts', () => {
     return true
   }
 
+  function estimateFcMax() {
+    const completed = workouts.value.filter(w => w.status === 'completed' && w.actual_max_heartrate)
+    if (completed.length === 0) return null
+    const sorted = completed.sort((a, b) => b.scheduled_date.localeCompare(a.scheduled_date))
+    const recent = sorted.slice(0, 20)
+    return Math.max(...recent.map(w => w.actual_max_heartrate))
+  }
+
+  function estimateVO2Max() {
+    const completed = workouts.value.filter(w => w.status === 'completed' && w.type === 'run' && w.actual_distance && w.actual_duration)
+    if (completed.length === 0) return null
+    const best5k = completed
+      .filter(w => w.actual_distance >= 4500 && w.actual_distance <= 5500)
+      .sort((a, b) => (a.actual_pace || Infinity) - (b.actual_pace || Infinity))[0]
+    const best10k = completed
+      .filter(w => w.actual_distance >= 9000 && w.actual_distance <= 11000)
+      .sort((a, b) => (a.actual_pace || Infinity) - (b.actual_pace || Infinity))[0]
+    let best = best5k || best10k
+    if (!best) {
+      const bestLong = completed
+        .filter(w => w.actual_distance >= 3000)
+        .sort((a, b) => (a.actual_pace || Infinity) - (b.actual_pace || Infinity))[0]
+      best = bestLong
+    }
+    if (!best) return null
+    const distMiles = (best.actual_distance / 1000) * 0.621371
+    const timeMin = best.actual_duration / 60
+    const vo2 = -4.60 + 0.182258 * distMiles + 0.000104 * distMiles * distMiles
+    const pct = 0.8 + 0.1894393 * Math.exp(-0.012778 * timeMin) + 0.2989558 * Math.exp(-0.1932605 * timeMin)
+    if (pct <= 0) return null
+    return Math.round((vo2 / pct) * 10) / 10
+  }
+
+  function getEnrichedProfile(profile) {
+    const enriched = { ...profile }
+    if (!enriched.fc_max) {
+      const estimated = estimateFcMax()
+      if (estimated) enriched.fc_max = estimated
+      enriched.fc_max_source = estimated ? 'estimado_strava' : null
+    }
+    if (!enriched.vo2_max) {
+      const estimated = estimateVO2Max()
+      if (estimated) enriched.vo2_max = estimated
+      enriched.vo2_max_source = estimated ? 'estimado_strava' : null
+    }
+    return enriched
+  }
+
   return {
     workouts,
     loading,
@@ -363,5 +421,8 @@ export const useWorkoutStore = defineStore('workouts', () => {
     getTrends,
     getPreviousWeeks,
     saveWeekLog,
+    estimateFcMax,
+    estimateVO2Max,
+    getEnrichedProfile,
   }
 })

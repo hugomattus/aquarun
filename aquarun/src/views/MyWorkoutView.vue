@@ -594,8 +594,10 @@ async function requestFeedback() {
           pace: w.actual_pace || null,
           heartrate: w.actual_heartrate || null,
           maxHeartrate: w.actual_max_heartrate || null,
+          elevation: w.actual_elevation || null,
+          cadence: w.actual_cadence || null,
         },
-        profile: auth.profile,
+        profile: workoutStore.getEnrichedProfile(auth.profile),
         recentWorkouts: workoutStore.getRecentWorkouts(w.type, 8),
         weekStats: (() => {
           const ws = workoutStore.getWeekStats(currentWeek)
@@ -609,6 +611,9 @@ async function requestFeedback() {
             avgEnergy: ws.avgEnergy || null,
             avgSleep: ws.avgSleep || null,
             avgStress: ws.avgStress || null,
+            totalElevation: ws.totalElevation || 0,
+            avgHeartrate: ws.avgHeartrate || null,
+            avgMaxHeartrate: ws.avgMaxHeartrate || null,
           }
         })(),
         trends: workoutStore.getTrends(currentWeek),
@@ -633,7 +638,7 @@ async function generateNextWeek() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        profile: auth.profile,
+        profile: workoutStore.getEnrichedProfile(auth.profile),
         previousWeek: {
           total_workouts: weekStats.total,
           completed_workouts: weekStats.completed,
@@ -651,6 +656,9 @@ async function generateNextWeek() {
           avg_sleep: weekStats.avgSleep,
           avg_stress: weekStats.avgStress,
           avg_heartrate: weekStats.avgHeartrate,
+          avg_max_heartrate: weekStats.avgMaxHeartrate,
+          total_elevation: weekStats.totalElevation,
+          avg_cadence: weekStats.avgCadence,
           avg_run_pace: weekStats.avgRunPace,
           avg_swim_pace: weekStats.avgSwimPace,
           pain_report: weekStats.painReports.join('; ') || null,

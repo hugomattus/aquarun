@@ -130,7 +130,9 @@ export const useStravaStore = defineStore('strava', () => {
         elapsed_time: activity.elapsed_time,
         start_date: activity.start_date,
         average_heartrate: activity.average_heartrate,
+        max_heartrate: activity.max_heartrate,
         average_speed: activity.average_speed,
+        average_cadence: activity.average_cadence,
         total_elevation_gain: activity.total_elevation_gain,
       }
 
