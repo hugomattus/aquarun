@@ -42,12 +42,20 @@ Responda sempre em português brasileiro. Seja direto e prático.`
           systemPrompt += `\n- ${w.name} (${w.type === 'swim' ? 'Natação' : 'Corrida'}) - ${w.scheduled_date}${dayLabel} - ${w.duration}min - Status: ${w.status === 'completed' ? 'Concluído' : 'Planejado'}`
           if (w.status === 'completed') {
             if (w.actual_distance) systemPrompt += ` | Distância: ${(w.actual_distance / 1000).toFixed(2)}km`
+            if (w.actual_duration) systemPrompt += ` | Tempo: ${Math.floor(w.actual_duration / 60)}min`
             if (w.actual_pace) {
               const min = Math.floor(1000 / w.actual_pace / 60)
               const sec = Math.floor((1000 / w.actual_pace) % 60)
               systemPrompt += ` | Ritmo: ${min}:${sec.toString().padStart(2, '0')}/km`
             }
-            if (w.feedback_effort) systemPrompt += ` | Esforço: ${w.feedback_effort}`
+            if (w.actual_heartrate) systemPrompt += ` | BPM: ${Math.round(w.actual_heartrate)}`
+            const effortMap = { very_easy: 'Muito fácil', easy: 'Fácil', moderate: 'Normal', hard: 'Difícil', very_hard: 'Muito difícil' }
+            if (w.feedback_effort) systemPrompt += ` | Esforço: ${effortMap[w.feedback_effort] || w.feedback_effort}`
+            if (w.feedback_energy) systemPrompt += ` | Energia: ${w.feedback_energy}/5`
+            if (w.feedback_sleep) systemPrompt += ` | Sono: ${w.feedback_sleep}/5`
+            if (w.feedback_stress) systemPrompt += ` | Estresse: ${w.feedback_stress}/5`
+            if (w.feedback_pain) systemPrompt += ` | Dor: ${w.feedback_pain}/10`
+            if (w.feedback_notes) systemPrompt += ` | Obs: ${w.feedback_notes}`
           }
         }
       }
