@@ -348,6 +348,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useStravaStore } from '../stores/strava'
 import { useWorkoutStore } from '../stores/workouts'
+import { useAuthStore } from '../stores/auth'
 import { formatDistance, formatDuration, formatDate, formatDateFull } from '../utils/formatters'
 import Icon from '../components/Icon.vue'
 import { Line } from 'vue-chartjs'
@@ -365,6 +366,7 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, 
 
 const strava = useStravaStore()
 const workoutStore = useWorkoutStore()
+const auth = useAuthStore()
 
 const showDetails = ref(false)
 const showNextDetails = ref(false)
