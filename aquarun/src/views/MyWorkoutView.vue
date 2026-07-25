@@ -124,9 +124,21 @@
               <h3 class="font-medium text-white">{{ selectedWorkout.name }}</h3>
               <p class="text-xs text-neutral-500">{{ formatDate(selectedWorkout.scheduled_date) }}</p>
             </div>
-            <button @click="closeWorkoutModal" class="p-1 hover:bg-dark rounded transition-colors">
-              <Icon name="x" :size="18" class="text-neutral-500" />
-            </button>
+            <div class="flex items-center gap-1">
+              <div v-if="selectedWorkout.status === 'completed' && !editingWorkout" class="relative">
+                <button @click="showMenu = !showMenu" class="p-1 hover:bg-dark rounded transition-colors">
+                  <Icon name="more-vertical" :size="18" class="text-neutral-500" />
+                </button>
+                <div v-if="showMenu" class="absolute right-0 top-full mt-1 bg-dark border border-neutral-700 rounded shadow-lg z-10 min-w-[120px]">
+                  <button @click="startEdit" class="w-full text-left px-3 py-2 text-sm text-neutral-300 hover:bg-surface-light flex items-center gap-2">
+                    <Icon name="edit-2" :size="14" /> Editar
+                  </button>
+                </div>
+              </div>
+              <button @click="closeWorkoutModal" class="p-1 hover:bg-dark rounded transition-colors">
+                <Icon name="x" :size="18" class="text-neutral-500" />
+              </button>
+            </div>
           </div>
 
           <div class="p-4 space-y-4">
@@ -167,7 +179,32 @@
             </div>
 
             <!-- Performance -->
-            <div v-if="selectedWorkout.actual_distance || selectedWorkout.actual_duration || selectedWorkout.actual_heartrate" class="bg-dark rounded p-3">
+            <div v-if="editingWorkout" class="bg-dark rounded p-3 space-y-3">
+              <div class="text-xs font-medium text-neutral-400">Performance</div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-xs text-neutral-500 mb-1">Distância (km)</label>
+                  <input v-model="editForm.distance" type="number" step="0.1" placeholder="5.0"
+                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
+                </div>
+                <div>
+                  <label class="block text-xs text-neutral-500 mb-1">Tempo (min:seg)</label>
+                  <input v-model="editForm.duration" type="text" placeholder="45:30"
+                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
+                </div>
+                <div>
+                  <label class="block text-xs text-neutral-500 mb-1">Ritmo (min:seg/km)</label>
+                  <input v-model="editForm.pace" type="text" placeholder="5:30"
+                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
+                </div>
+                <div>
+                  <label class="block text-xs text-neutral-500 mb-1">BPM médio</label>
+                  <input v-model="editForm.heartrate" type="number" placeholder="140"
+                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
+                </div>
+              </div>
+            </div>
+            <div v-else-if="selectedWorkout.actual_distance || selectedWorkout.actual_duration || selectedWorkout.actual_heartrate" class="bg-dark rounded p-3">
               <div class="text-xs font-medium text-neutral-400 mb-2">Performance</div>
               <div class="grid grid-cols-2 gap-2 text-sm">
                 <div v-if="selectedWorkout.actual_distance">
@@ -190,7 +227,49 @@
             </div>
 
             <!-- Feedback do Atleta -->
-            <div v-if="selectedWorkout.feedback_effort || selectedWorkout.feedback_energy || selectedWorkout.feedback_notes" class="bg-dark rounded p-3">
+            <div v-if="editingWorkout" class="bg-dark rounded p-3 space-y-3">
+              <div class="text-xs font-medium text-neutral-400">Seu Feedback</div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-xs text-neutral-500 mb-1">Esforço</label>
+                  <select v-model="editForm.effort"
+                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-primary">
+                    <option value="">Selecione</option>
+                    <option value="very_easy">Muito fácil</option>
+                    <option value="easy">Fácil</option>
+                    <option value="moderate">Normal</option>
+                    <option value="hard">Difícil</option>
+                    <option value="very_hard">Muito difícil</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs text-neutral-500 mb-1">Energia (1-5)</label>
+                  <input v-model="editForm.energy" type="number" min="1" max="5" placeholder="3"
+                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
+                </div>
+                <div>
+                  <label class="block text-xs text-neutral-500 mb-1">Sono (1-5)</label>
+                  <input v-model="editForm.sleep" type="number" min="1" max="5" placeholder="3"
+                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
+                </div>
+                <div>
+                  <label class="block text-xs text-neutral-500 mb-1">Estresse (1-5)</label>
+                  <input v-model="editForm.stress" type="number" min="1" max="5" placeholder="3"
+                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
+                </div>
+                <div>
+                  <label class="block text-xs text-neutral-500 mb-1">Dor (0-10)</label>
+                  <input v-model="editForm.pain" type="number" min="0" max="10" placeholder="0"
+                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs text-neutral-500 mb-1">Observações</label>
+                <input v-model="editForm.notes" type="text" placeholder="Alguma observação..."
+                  class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
+              </div>
+            </div>
+            <div v-else-if="selectedWorkout.feedback_effort || selectedWorkout.feedback_energy || selectedWorkout.feedback_notes" class="bg-dark rounded p-3">
               <div class="text-xs font-medium text-neutral-400 mb-2">Seu Feedback</div>
               <div class="grid grid-cols-2 gap-2 text-sm">
                 <div v-if="selectedWorkout.feedback_effort">
@@ -249,6 +328,23 @@
               </div>
             </div>
 
+            <!-- Botões Editar/Salvar -->
+            <div v-if="editingWorkout" class="flex gap-2">
+              <button
+                @click="cancelEdit"
+                class="flex-1 py-2.5 bg-dark hover:bg-dark/80 rounded text-sm font-medium transition-colors text-neutral-400 border border-neutral-800"
+              >
+                Cancelar
+              </button>
+              <button
+                @click="saveEdit"
+                :disabled="savingEdit"
+                class="flex-1 py-2.5 bg-primary hover:bg-primary-dark disabled:opacity-50 rounded text-sm font-medium transition-colors"
+              >
+                {{ savingEdit ? 'Salvando...' : 'Salvar' }}
+              </button>
+            </div>
+
             <!-- Botão Pedir Feedback -->
             <button
               v-if="selectedWorkout.status === 'completed' && !aiFeedback"
@@ -285,6 +381,10 @@ const generating = ref(false)
 const selectedWorkout = ref(null)
 const aiFeedback = ref(null)
 const loadingFeedback = ref(false)
+const showMenu = ref(false)
+const editingWorkout = ref(false)
+const savingEdit = ref(false)
+const editForm = ref({})
 
 const currentWeek = computed(() => auth.profile?.current_week || 0)
 
@@ -363,11 +463,111 @@ function formatPace(pace) {
 function openWorkoutModal(workout) {
   selectedWorkout.value = workout
   aiFeedback.value = null
+  showMenu.value = false
+  editingWorkout.value = false
 }
 
 function closeWorkoutModal() {
   selectedWorkout.value = null
   aiFeedback.value = null
+  showMenu.value = false
+  editingWorkout.value = false
+}
+
+function formatDurationInput(seconds) {
+  if (!seconds) return ''
+  const min = Math.floor(seconds / 60)
+  const sec = seconds % 60
+  return sec > 0 ? `${min}:${sec.toString().padStart(2, '0')}` : `${min}`
+}
+
+function parseDurationInput(str) {
+  if (!str) return null
+  const parts = str.split(':')
+  if (parts.length === 2) return parseInt(parts[0]) * 60 + parseInt(parts[1])
+  return parseInt(parts[0]) * 60
+}
+
+function formatPaceInput(pace) {
+  if (!pace) return ''
+  const min = Math.floor(pace / 60)
+  const sec = Math.floor(pace % 60)
+  return `${min}:${sec.toString().padStart(2, '0')}`
+}
+
+function parsePaceInput(str) {
+  if (!str) return null
+  const parts = str.split(':')
+  if (parts.length === 2) return parseInt(parts[0]) * 60 + parseInt(parts[1])
+  return parseInt(parts[0]) * 60
+}
+
+function startEdit() {
+  const w = selectedWorkout.value
+  editForm.value = {
+    distance: w.actual_distance ? (w.actual_distance / 1000).toFixed(1) : '',
+    duration: formatDurationInput(w.actual_duration),
+    pace: formatPaceInput(w.actual_pace),
+    heartrate: w.actual_heartrate ? Math.round(w.actual_heartrate) : '',
+    effort: w.feedback_effort || '',
+    energy: w.feedback_energy || '',
+    sleep: w.feedback_sleep || '',
+    stress: w.feedback_stress || '',
+    pain: w.feedback_pain ?? '',
+    notes: w.feedback_notes || '',
+  }
+  editingWorkout.value = true
+  showMenu.value = false
+}
+
+function cancelEdit() {
+  editingWorkout.value = false
+  editForm.value = {}
+}
+
+async function saveEdit() {
+  savingEdit.value = true
+  try {
+    const w = selectedWorkout.value
+    const distance = editForm.value.distance ? parseFloat(editForm.value.distance) * 1000 : null
+    const duration = parseDurationInput(editForm.value.duration)
+    let pace = parsePaceInput(editForm.value.pace)
+    if (!pace && distance && duration) pace = duration * 1000 / distance
+
+    await workoutStore.saveWorkoutPerformance(w.id, {
+      distance,
+      duration,
+      pace,
+      heartrate: editForm.value.heartrate ? parseFloat(editForm.value.heartrate) : null,
+      maxHeartrate: null,
+      cadence: null,
+      elevation: null,
+      calories: null,
+      movingTime: duration,
+      elapsedTime: duration,
+      splits: null,
+    })
+
+    await workoutStore.saveWorkoutFeedback(w.id, {
+      effort: editForm.value.effort || null,
+      pain: editForm.value.pain !== '' ? parseInt(editForm.value.pain) : null,
+      energy: editForm.value.energy ? parseInt(editForm.value.energy) : null,
+      sleep: editForm.value.sleep ? parseInt(editForm.value.sleep) : null,
+      stress: editForm.value.stress ? parseInt(editForm.value.stress) : null,
+      notes: editForm.value.notes || null,
+    })
+
+    await workoutStore.fetchWorkouts()
+
+    const updated = workoutStore.workouts.find(wo => wo.id === w.id)
+    if (updated) selectedWorkout.value = updated
+
+    editingWorkout.value = false
+  } catch (e) {
+    console.error('Erro ao salvar:', e)
+  } finally {
+    savingEdit.value = false
+  }
 }
 
 async function requestFeedback() {
