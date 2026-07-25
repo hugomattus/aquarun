@@ -296,15 +296,18 @@ const hasOnboardingData = computed(() => {
 const weekWorkouts = computed(() => {
   const now = new Date()
   const dayOfWeek = now.getDay()
-  const sunday = new Date(now)
-  sunday.setDate(now.getDate() + (7 - dayOfWeek) % 7)
+  const monday = new Date(now)
+  monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7))
+  monday.setHours(0, 0, 0, 0)
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 6)
   sunday.setHours(23, 59, 59, 999)
 
-  const todayStr = now.toLocaleDateString('sv-SE')
+  const mondayStr = monday.toLocaleDateString('sv-SE')
   const sundayStr = sunday.toLocaleDateString('sv-SE')
 
   return workoutStore.workouts
-    .filter(w => w.scheduled_date >= todayStr && w.scheduled_date <= sundayStr)
+    .filter(w => w.scheduled_date >= mondayStr && w.scheduled_date <= sundayStr)
     .sort((a, b) => a.scheduled_date.localeCompare(b.scheduled_date))
 })
 
