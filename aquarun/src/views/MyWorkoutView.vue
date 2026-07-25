@@ -46,12 +46,12 @@
       </div>
 
       <div class="space-y-2">
-        <router-link
+        <div
           v-for="workout in weekWorkouts"
           :key="workout.id"
-          :to="workout.status === 'planned' ? `/workout/${workout.id}` : '#'"
+          @click="workout.status === 'planned' ? $router.push(`/workout/${workout.id}`) : workout.status === 'completed' ? openWorkoutModal(workout) : null"
           class="flex items-center gap-4 p-4 rounded bg-surface border border-neutral-800 transition-colors"
-          :class="workout.status === 'planned' ? 'hover:bg-surface-light cursor-pointer' : ''"
+          :class="workout.status === 'planned' ? 'hover:bg-surface-light cursor-pointer' : workout.status === 'completed' ? 'hover:bg-surface-light cursor-pointer' : ''"
         >
           <div
             class="w-10 h-10 rounded flex items-center justify-center flex-shrink-0"
@@ -92,7 +92,7 @@
             </span>
             <Icon v-else name="chevron-right" :size="18" class="text-neutral-600" />
           </div>
-        </router-link>
+        </div>
       </div>
 
       <div v-if="weekProgress.allDone" class="bg-surface rounded p-6 border border-neutral-800">
@@ -110,6 +110,165 @@
         </div>
       </div>
     </template>
+
+    <!-- Modal Detalhes do Treino -->
+    <Teleport to="body">
+      <div
+        v-if="selectedWorkout"
+        class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
+        @click.self="closeWorkoutModal"
+      >
+        <div class="bg-surface w-full sm:max-w-md sm:rounded-lg rounded-t-lg max-h-[85vh] overflow-y-auto border border-neutral-800">
+          <div class="sticky top-0 bg-surface border-b border-neutral-800 p-4 flex items-center justify-between">
+            <div>
+              <h3 class="font-medium text-white">{{ selectedWorkout.name }}</h3>
+              <p class="text-xs text-neutral-500">{{ formatDate(selectedWorkout.scheduled_date) }}</p>
+            </div>
+            <button @click="closeWorkoutModal" class="p-1 hover:bg-dark rounded transition-colors">
+              <Icon name="x" :size="18" class="text-neutral-500" />
+            </button>
+          </div>
+
+          <div class="p-4 space-y-4">
+            <!-- Estrutura do Treino -->
+            <div v-if="parsedStructure" class="space-y-2">
+              <div v-if="parsedStructure.objective" class="bg-dark rounded p-3">
+                <div class="text-xs font-medium text-neutral-400 mb-1">Objetivo</div>
+                <p class="text-sm text-neutral-300">{{ parsedStructure.objective }}</p>
+              </div>
+              <div v-if="parsedStructure.warmup" class="bg-dark rounded p-3">
+                <div class="text-xs font-medium text-yellow-500 mb-1">Aquecimento</div>
+                <p class="text-sm text-neutral-400 whitespace-pre-line">{{ parsedStructure.warmup }}</p>
+              </div>
+              <div v-if="parsedStructure.main_part" class="bg-dark rounded p-3">
+                <div class="text-xs font-medium text-primary mb-1">Parte Principal</div>
+                <p class="text-sm text-neutral-400 whitespace-pre-line">{{ parsedStructure.main_part }}</p>
+              </div>
+              <div v-if="parsedStructure.cooldown" class="bg-dark rounded p-3">
+                <div class="text-xs font-medium text-blue-400 mb-1">Desaquecimento</div>
+                <p class="text-sm text-neutral-400 whitespace-pre-line">{{ parsedStructure.cooldown }}</p>
+              </div>
+              <div v-if="parsedStructure.drills?.length" class="bg-dark rounded p-3">
+                <div class="text-xs font-medium text-green-400 mb-1">Educativos</div>
+                <ul class="space-y-1">
+                  <li v-for="(drill, i) in parsedStructure.drills" :key="i" class="text-sm text-neutral-400 flex items-start gap-2">
+                    <span class="text-neutral-600">•</span><span>{{ drill }}</span>
+                  </li>
+                </ul>
+              </div>
+              <div v-if="parsedStructure.attention_points?.length" class="bg-dark rounded p-3">
+                <div class="text-xs font-medium text-purple-400 mb-1">Pontos de Atenção</div>
+                <ul class="space-y-1">
+                  <li v-for="(point, i) in parsedStructure.attention_points" :key="i" class="text-sm text-neutral-400 flex items-start gap-2">
+                    <span class="text-neutral-600">•</span><span>{{ point }}</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Performance -->
+            <div v-if="selectedWorkout.actual_distance || selectedWorkout.actual_duration || selectedWorkout.actual_heartrate" class="bg-dark rounded p-3">
+              <div class="text-xs font-medium text-neutral-400 mb-2">Performance</div>
+              <div class="grid grid-cols-2 gap-2 text-sm">
+                <div v-if="selectedWorkout.actual_distance">
+                  <span class="text-neutral-500">Distância:</span>
+                  <span class="text-white ml-1">{{ formatDistance(selectedWorkout.actual_distance) }}</span>
+                </div>
+                <div v-if="selectedWorkout.actual_duration">
+                  <span class="text-neutral-500">Tempo:</span>
+                  <span class="text-white ml-1">{{ Math.floor(selectedWorkout.actual_duration / 60) }}min</span>
+                </div>
+                <div v-if="selectedWorkout.actual_pace">
+                  <span class="text-neutral-500">Ritmo:</span>
+                  <span class="text-white ml-1">{{ formatPace(selectedWorkout.actual_pace) }}</span>
+                </div>
+                <div v-if="selectedWorkout.actual_heartrate">
+                  <span class="text-neutral-500">BPM:</span>
+                  <span class="text-white ml-1">{{ Math.round(selectedWorkout.actual_heartrate) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Feedback do Atleta -->
+            <div v-if="selectedWorkout.feedback_effort || selectedWorkout.feedback_energy || selectedWorkout.feedback_notes" class="bg-dark rounded p-3">
+              <div class="text-xs font-medium text-neutral-400 mb-2">Seu Feedback</div>
+              <div class="grid grid-cols-2 gap-2 text-sm">
+                <div v-if="selectedWorkout.feedback_effort">
+                  <span class="text-neutral-500">Esforço:</span>
+                  <span class="text-white ml-1">{{ effortLabel(selectedWorkout.feedback_effort) }}</span>
+                </div>
+                <div v-if="selectedWorkout.feedback_energy">
+                  <span class="text-neutral-500">Energia:</span>
+                  <span class="text-white ml-1">{{ selectedWorkout.feedback_energy }}/5</span>
+                </div>
+                <div v-if="selectedWorkout.feedback_sleep">
+                  <span class="text-neutral-500">Sono:</span>
+                  <span class="text-white ml-1">{{ selectedWorkout.feedback_sleep }}/5</span>
+                </div>
+                <div v-if="selectedWorkout.feedback_stress">
+                  <span class="text-neutral-500">Estresse:</span>
+                  <span class="text-white ml-1">{{ selectedWorkout.feedback_stress }}/5</span>
+                </div>
+                <div v-if="selectedWorkout.feedback_pain">
+                  <span class="text-neutral-500">Dor:</span>
+                  <span class="text-white ml-1">{{ selectedWorkout.feedback_pain }}/10</span>
+                </div>
+              </div>
+              <div v-if="selectedWorkout.feedback_notes" class="mt-2 text-sm">
+                <span class="text-neutral-500">Obs:</span>
+                <span class="text-neutral-300 ml-1">{{ selectedWorkout.feedback_notes }}</span>
+              </div>
+            </div>
+
+            <!-- AI Feedback -->
+            <div v-if="aiFeedback" class="bg-dark rounded p-3 border border-primary/20">
+              <div class="flex items-center gap-2 mb-2">
+                <Icon name="message-circle" :size="14" class="text-primary" />
+                <span class="text-xs font-medium text-primary">Feedback IA</span>
+              </div>
+              <p class="text-sm text-neutral-300 mb-2">{{ aiFeedback.summary }}</p>
+              <div v-if="aiFeedback.positive?.length" class="mb-2">
+                <div class="text-xs text-green-400 mb-1">Pontos positivos</div>
+                <ul class="space-y-0.5">
+                  <li v-for="(p, i) in aiFeedback.positive" :key="i" class="text-xs text-neutral-400 flex items-start gap-1">
+                    <span class="text-green-500">+</span> {{ p }}
+                  </li>
+                </ul>
+              </div>
+              <div v-if="aiFeedback.negative?.length && aiFeedback.negative[0]" class="mb-2">
+                <div class="text-xs text-yellow-400 mb-1">A melhorar</div>
+                <ul class="space-y-0.5">
+                  <li v-for="(n, i) in aiFeedback.negative" :key="i" class="text-xs text-neutral-400 flex items-start gap-1">
+                    <span class="text-yellow-500">!</span> {{ n }}
+                  </li>
+                </ul>
+              </div>
+              <div v-if="aiFeedback.tip" class="bg-surface rounded p-2 mt-2">
+                <div class="text-xs text-primary mb-1">Dica</div>
+                <p class="text-xs text-neutral-400">{{ aiFeedback.tip }}</p>
+              </div>
+            </div>
+
+            <!-- Botão Pedir Feedback -->
+            <button
+              v-if="selectedWorkout.status === 'completed' && !aiFeedback"
+              @click="requestFeedback"
+              :disabled="loadingFeedback"
+              class="w-full py-2.5 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded text-sm font-medium transition-colors text-primary"
+            >
+              <span v-if="loadingFeedback" class="flex items-center justify-center gap-2">
+                <span class="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                Gerando feedback...
+              </span>
+              <span v-else class="flex items-center justify-center gap-2">
+                <Icon name="message-circle" :size="14" />
+                Pedir Feedback IA
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -123,6 +282,9 @@ import Icon from '../components/Icon.vue'
 const auth = useAuthStore()
 const workoutStore = useWorkoutStore()
 const generating = ref(false)
+const selectedWorkout = ref(null)
+const aiFeedback = ref(null)
+const loadingFeedback = ref(false)
 
 const currentWeek = computed(() => auth.profile?.current_week || 0)
 
@@ -178,6 +340,70 @@ function getWorkoutObjective(workout) {
   if (!workout.structure) return null
   const s = typeof workout.structure === 'string' ? (() => { try { return JSON.parse(workout.structure) } catch { return null } })() : workout.structure
   return s?.objective || null
+}
+
+const parsedStructure = computed(() => {
+  if (!selectedWorkout.value?.structure) return null
+  const s = selectedWorkout.value.structure
+  return typeof s === 'string' ? (() => { try { return JSON.parse(s) } catch { return null } })() : s
+})
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00')
+  return d.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
+}
+
+function formatPace(pace) {
+  if (!pace) return ''
+  const min = Math.floor(1000 / pace / 60)
+  const sec = Math.floor((1000 / pace) % 60)
+  return `${min}:${sec.toString().padStart(2, '0')}/km`
+}
+
+function openWorkoutModal(workout) {
+  selectedWorkout.value = workout
+  aiFeedback.value = null
+}
+
+function closeWorkoutModal() {
+  selectedWorkout.value = null
+  aiFeedback.value = null
+}
+
+async function requestFeedback() {
+  loadingFeedback.value = true
+  try {
+    const w = selectedWorkout.value
+    const res = await fetch('/api/workout-feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        workout: { name: w.name, type: w.type, duration: w.duration },
+        feedback: {
+          effort: w.feedback_effort || null,
+          energy: w.feedback_energy || null,
+          sleep: w.feedback_sleep || null,
+          stress: w.feedback_stress || null,
+          pain: w.feedback_pain || null,
+          notes: w.feedback_notes || null,
+        },
+        performance: {
+          distance: w.actual_distance || null,
+          duration: w.actual_duration || null,
+          pace: w.actual_pace || null,
+          heartrate: w.actual_heartrate || null,
+          maxHeartrate: w.actual_max_heartrate || null,
+        },
+      }),
+    })
+    if (res.ok) {
+      aiFeedback.value = await res.json()
+    }
+  } catch (e) {
+    console.error('Erro ao gerar feedback:', e)
+  } finally {
+    loadingFeedback.value = false
+  }
 }
 
 async function generateNextWeek() {
