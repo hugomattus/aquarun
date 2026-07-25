@@ -240,6 +240,7 @@
             <div class="text-sm text-white truncate">{{ workout.name }}</div>
           </div>
           <div v-if="workout.status === 'completed'" class="text-xs text-green-500">OK</div>
+          <div v-else-if="workout.isPast" class="text-xs text-red-400">Não feito</div>
           <div v-else class="text-xs text-neutral-600">{{ dayShort(workout.scheduled_date) }}</div>
         </router-link>
       </div>
@@ -399,9 +400,14 @@ const weeklyPlan = computed(() => {
 
   const mondayStr = monday.toLocaleDateString('sv-SE')
   const sundayStr = sunday.toLocaleDateString('sv-SE')
+  const todayStr = now.toLocaleDateString('sv-SE')
 
   return workoutStore.workouts
     .filter(w => w.scheduled_date >= mondayStr && w.scheduled_date <= sundayStr)
+    .map(w => ({
+      ...w,
+      isPast: w.scheduled_date < todayStr && w.status === 'planned',
+    }))
     .sort((a, b) => a.scheduled_date.localeCompare(b.scheduled_date))
 })
 

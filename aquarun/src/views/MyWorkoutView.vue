@@ -90,6 +90,12 @@
             >
               Pulado
             </span>
+            <span
+              v-else-if="workout.isPast"
+              class="text-xs text-red-400"
+            >
+              Não feito
+            </span>
             <Icon v-else name="chevron-right" :size="18" class="text-neutral-600" />
           </div>
         </router-link>
@@ -141,11 +147,16 @@ const weekWorkouts = computed(() => {
   sunday.setDate(monday.getDate() + 6)
   sunday.setHours(23, 59, 59, 999)
 
-  const todayStr = now.toLocaleDateString('sv-SE')
+  const mondayStr = monday.toLocaleDateString('sv-SE')
   const sundayStr = sunday.toLocaleDateString('sv-SE')
+  const todayStr = now.toLocaleDateString('sv-SE')
 
   return workoutStore.workouts
-    .filter(w => w.scheduled_date >= todayStr && w.scheduled_date <= sundayStr)
+    .filter(w => w.scheduled_date >= mondayStr && w.scheduled_date <= sundayStr)
+    .map(w => ({
+      ...w,
+      isPast: w.scheduled_date < todayStr && w.status === 'planned',
+    }))
     .sort((a, b) => a.scheduled_date.localeCompare(b.scheduled_date))
 })
 
