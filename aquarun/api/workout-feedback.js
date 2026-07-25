@@ -13,8 +13,8 @@ export default async function handler(req, res) {
     if (performance?.distance) perfLines.push(`Distância: ${(performance.distance / 1000).toFixed(2)} km`)
     if (performance?.duration) perfLines.push(`Tempo: ${Math.floor(performance.duration / 60)}min ${performance.duration % 60}s`)
     if (performance?.pace) {
-      const min = Math.floor(1000 / performance.pace / 60)
-      const sec = Math.floor((1000 / performance.pace) % 60)
+      const min = Math.floor(performance.pace / 60)
+      const sec = Math.floor(performance.pace % 60)
       perfLines.push(`Ritmo: ${min}:${sec.toString().padStart(2, '0')}/km`)
     }
     if (performance?.heartrate) perfLines.push(`BPM médio: ${Math.round(performance.heartrate)}`)

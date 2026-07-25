@@ -355,8 +355,8 @@ function formatDate(dateStr) {
 
 function formatPace(pace) {
   if (!pace) return ''
-  const min = Math.floor(1000 / pace / 60)
-  const sec = Math.floor((1000 / pace) % 60)
+  const min = Math.floor(pace / 60)
+  const sec = Math.floor(pace % 60)
   return `${min}:${sec.toString().padStart(2, '0')}/km`
 }
 

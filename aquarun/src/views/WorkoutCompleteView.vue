@@ -523,7 +523,7 @@ async function completeWorkout() {
 
   if (selectedActivity.value) {
     const a = selectedActivity.value
-    const pace = a.moving_time > 0 ? a.distance / a.moving_time : null
+    const pace = a.moving_time > 0 && a.distance > 0 ? (a.moving_time * 1000 / a.distance) : null
 
     await workoutStore.saveWorkoutPerformance(workout.value.id, {
       distance: a.distance,
@@ -545,10 +545,10 @@ async function completeWorkout() {
     if (manualData.value.pace) {
       const parts = manualData.value.pace.split(':')
       if (parts.length === 2) {
-        pace = (parseInt(parts[0]) * 60 + parseInt(parts[1])) / 1000
+        pace = parseInt(parts[0]) * 60 + parseInt(parts[1])
       }
     } else if (distance && duration) {
-      pace = duration / distance
+      pace = duration * 1000 / distance
     }
 
     await workoutStore.saveWorkoutPerformance(workout.value.id, {
@@ -582,7 +582,7 @@ async function completeWorkout() {
     const perfData = selectedActivity.value ? {
       distance: selectedActivity.value.distance,
       duration: selectedActivity.value.moving_time,
-      pace: selectedActivity.value.moving_time > 0 ? selectedActivity.value.distance / selectedActivity.value.moving_time : null,
+      pace: selectedActivity.value.moving_time > 0 && selectedActivity.value.distance > 0 ? (selectedActivity.value.moving_time * 1000 / selectedActivity.value.distance) : null,
       heartrate: selectedActivity.value.average_heartrate,
       maxHeartrate: selectedActivity.value.max_heartrate,
     } : manualData.value.distance || manualData.value.duration ? {
@@ -590,8 +590,8 @@ async function completeWorkout() {
       duration: manualData.value.duration ? parseInt(manualData.value.duration) * 60 : null,
       pace: manualData.value.pace ? (() => {
         const parts = manualData.value.pace.split(':')
-        return parts.length === 2 ? (parseInt(parts[0]) * 60 + parseInt(parts[1])) / 1000 : null
-      })() : null,
+        return parts.length === 2 ? parseInt(parts[0]) * 60 + parseInt(parts[1]) : null
+      })() : (distance && duration) ? (duration * 1000 / distance) : null,
       heartrate: manualData.value.heartrate ? parseFloat(manualData.value.heartrate) : null,
       maxHeartrate: manualData.value.maxHeartrate ? parseFloat(manualData.value.maxHeartrate) : null,
     } : null
