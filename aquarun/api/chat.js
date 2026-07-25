@@ -33,8 +33,8 @@ Responda sempre em português brasileiro. Seja direto e prático.`
       }
 
       if (context.currentWeekWorkouts?.length) {
-        const today = new Date().toLocaleDateString('sv-SE')
-        systemPrompt += `\n\nHOJE É DIA: ${today}`
+        const today = context.today || new Date().toISOString().split('T')[0]
+        systemPrompt += `\n\nHOJE É DIA: ${today} (fuso horário do atleta)`
         systemPrompt += `\n\nTREINOS DESTA SEMANA:`
         for (const w of context.currentWeekWorkouts) {
           const isToday = w.scheduled_date === today

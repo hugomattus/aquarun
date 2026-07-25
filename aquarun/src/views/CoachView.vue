@@ -135,6 +135,7 @@ async function sendMessage(text) {
     const completed = workouts.filter(w => w.status === 'completed')
     const effortMap = { very_easy: 1, easy: 2, moderate: 3, hard: 4, very_hard: 5 }
     const context = {
+      today: new Date().toLocaleDateString('sv-SE'),
       profile: auth.profile,
       currentWeekWorkouts: workouts,
       recentActivities: strava.activities.slice(0, 5),
