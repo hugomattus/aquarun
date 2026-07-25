@@ -257,8 +257,8 @@
                   class="w-full bg-dark border border-neutral-800 rounded px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
               </div>
               <div>
-                <label class="block text-xs text-neutral-500 mb-1">Tempo (min)</label>
-                <input v-model="manualData.duration" type="number" placeholder="45"
+                <label class="block text-xs text-neutral-500 mb-1">Tempo (min:seg)</label>
+                <input v-model="manualData.duration" type="text" placeholder="45:30"
                   class="w-full bg-dark border border-neutral-800 rounded px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
               </div>
               <div>
@@ -540,7 +540,11 @@ async function completeWorkout() {
     })
   } else if (manualData.value.distance || manualData.value.duration) {
     const distance = manualData.value.distance ? parseFloat(manualData.value.distance) * 1000 : null
-    const duration = manualData.value.duration ? parseInt(manualData.value.duration) * 60 : null
+    const duration = manualData.value.duration ? (() => {
+      const parts = manualData.value.duration.split(':')
+      if (parts.length === 2) return parseInt(parts[0]) * 60 + parseInt(parts[1])
+      return parseInt(parts[0]) * 60
+    })() : null
     let pace = null
     if (manualData.value.pace) {
       const parts = manualData.value.pace.split(':')
@@ -587,7 +591,11 @@ async function completeWorkout() {
       maxHeartrate: selectedActivity.value.max_heartrate,
     } : manualData.value.distance || manualData.value.duration ? {
       distance: manualData.value.distance ? parseFloat(manualData.value.distance) * 1000 : null,
-      duration: manualData.value.duration ? parseInt(manualData.value.duration) * 60 : null,
+      duration: manualData.value.duration ? (() => {
+        const parts = manualData.value.duration.split(':')
+        if (parts.length === 2) return parseInt(parts[0]) * 60 + parseInt(parts[1])
+        return parseInt(parts[0]) * 60
+      })() : null,
       pace: manualData.value.pace ? (() => {
         const parts = manualData.value.pace.split(':')
         return parts.length === 2 ? parseInt(parts[0]) * 60 + parseInt(parts[1]) : null

@@ -176,7 +176,7 @@
                 </div>
                 <div v-if="selectedWorkout.actual_duration">
                   <span class="text-neutral-500">Tempo:</span>
-                  <span class="text-white ml-1">{{ Math.floor(selectedWorkout.actual_duration / 60) }}min</span>
+                  <span class="text-white ml-1">{{ Math.floor(selectedWorkout.actual_duration / 60) }}min {{ selectedWorkout.actual_duration % 60 }}s</span>
                 </div>
                 <div v-if="selectedWorkout.actual_pace">
                   <span class="text-neutral-500">Ritmo:</span>
