@@ -179,6 +179,52 @@
           </div>
         </div>
 
+        <div v-if="aiFeedback" class="bg-surface rounded p-5 border border-neutral-800 mb-6">
+          <div class="flex items-center gap-2 mb-4">
+            <Icon name="zap" :size="18" class="text-primary" />
+            <span class="text-sm font-medium text-white">Feedback do Treino</span>
+          </div>
+          <p class="text-sm text-neutral-300 mb-4">{{ aiFeedback.summary }}</p>
+          <div v-if="aiFeedback.positive?.length" class="mb-3">
+            <div class="text-xs font-medium text-green-500 mb-2">Pontos Positivos</div>
+            <ul class="space-y-1">
+              <li v-for="(item, i) in aiFeedback.positive" :key="i" class="text-sm text-neutral-400 flex items-start gap-2">
+                <span class="text-green-500 mt-1">+</span>
+                <span>{{ item }}</span>
+              </li>
+            </ul>
+          </div>
+          <div v-if="aiFeedback.negative?.length" class="mb-3">
+            <div class="text-xs font-medium text-yellow-500 mb-2">Pontos de Atenção</div>
+            <ul class="space-y-1">
+              <li v-for="(item, i) in aiFeedback.negative" :key="i" class="text-sm text-neutral-400 flex items-start gap-2">
+                <span class="text-yellow-500 mt-1">!</span>
+                <span>{{ item }}</span>
+              </li>
+            </ul>
+          </div>
+          <div v-if="aiFeedback.tip" class="bg-dark rounded p-3 mt-3">
+            <div class="text-xs font-medium text-primary mb-1">Dica</div>
+            <p class="text-sm text-neutral-400">{{ aiFeedback.tip }}</p>
+          </div>
+          <button
+            @click="router.push('/')"
+            class="w-full mt-5 py-2.5 bg-primary hover:bg-primary-dark rounded font-medium transition-colors text-sm"
+          >
+            Voltar ao Dashboard
+          </button>
+        </div>
+
+        <div v-if="generatingFeedback" class="bg-surface rounded p-8 border border-neutral-800 mb-6 text-center">
+          <div class="w-12 h-12 mx-auto mb-4 relative">
+            <div class="absolute inset-0 rounded-full border-2 border-primary/20"></div>
+            <div class="absolute inset-0 rounded-full border-2 border-transparent border-t-primary animate-spin"></div>
+            <Icon name="zap" :size="20" class="absolute inset-0 m-auto text-primary" />
+          </div>
+          <p class="text-sm text-neutral-400">Analisando seu treino...</p>
+          <p class="text-xs text-neutral-600 mt-1">A IA está gerando seu feedback</p>
+        </div>
+
         <div v-if="workout.status === 'planned'" class="space-y-6">
           <div v-if="strava.connected && stravaActivities.length > 0" class="bg-surface rounded p-5 border border-neutral-800">
             <h3 class="text-sm font-medium text-white mb-3">Vincular atividade do Strava</h3>
@@ -422,6 +468,8 @@ const manualData = ref({
 })
 
 const selectedActivity = ref(null)
+const aiFeedback = ref(null)
+const generatingFeedback = ref(false)
 
 const workout = computed(() =>
   workoutStore.workouts.find(w => w.id === route.params.id)
@@ -529,7 +577,43 @@ async function completeWorkout() {
 
   await workoutStore.completeWorkout(workout.value.id, selectedActivity.value?.id || null)
 
-  router.push('/')
+  generatingFeedback.value = true
+  try {
+    const perfData = selectedActivity.value ? {
+      distance: selectedActivity.value.distance,
+      duration: selectedActivity.value.moving_time,
+      pace: selectedActivity.value.moving_time > 0 ? selectedActivity.value.distance / selectedActivity.value.moving_time : null,
+      heartrate: selectedActivity.value.average_heartrate,
+      maxHeartrate: selectedActivity.value.max_heartrate,
+    } : manualData.value.distance || manualData.value.duration ? {
+      distance: manualData.value.distance ? parseFloat(manualData.value.distance) * 1000 : null,
+      duration: manualData.value.duration ? parseInt(manualData.value.duration) * 60 : null,
+      pace: manualData.value.pace ? (() => {
+        const parts = manualData.value.pace.split(':')
+        return parts.length === 2 ? (parseInt(parts[0]) * 60 + parseInt(parts[1])) / 1000 : null
+      })() : null,
+      heartrate: manualData.value.heartrate ? parseFloat(manualData.value.heartrate) : null,
+      maxHeartrate: manualData.value.maxHeartrate ? parseFloat(manualData.value.maxHeartrate) : null,
+    } : null
+
+    const res = await fetch('/api/workout-feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        workout: { name: workout.value.name, type: workout.value.type, duration: workout.value.duration },
+        feedback: feedback.value,
+        performance: perfData,
+      }),
+    })
+
+    if (res.ok) {
+      aiFeedback.value = await res.json()
+    }
+  } catch (e) {
+    console.error('Erro ao gerar feedback:', e)
+  } finally {
+    generatingFeedback.value = false
+  }
 }
 
 onMounted(async () => {
