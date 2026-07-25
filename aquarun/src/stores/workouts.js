@@ -232,6 +232,82 @@ export const useWorkoutStore = defineStore('workouts', () => {
     }
   }
 
+  function getRecentWorkouts(type, limit = 8) {
+    return workouts.value
+      .filter(w => w.status === 'completed' && (!type || w.type === type))
+      .sort((a, b) => b.scheduled_date.localeCompare(a.scheduled_date))
+      .slice(0, limit)
+  }
+
+  function getTrends(currentWeekNumber) {
+    const weeks = []
+    for (let w = Math.max(1, currentWeekNumber - 3); w < currentWeekNumber; w++) {
+      weeks.push(getWeekStats(w))
+    }
+    if (weeks.length < 2) return null
+
+    const paceValues = weeks.filter(w => w.avgRunPace > 0).map(w => w.avgRunPace)
+    const distValues = weeks.filter(w => w.runDistance > 0).map(w => w.runDistance)
+    const effortValues = weeks.filter(w => w.avgEffort > 0).map(w => w.avgEffort)
+    const painValues = weeks.filter(w => w.avgPain > 0).map(w => w.avgPain)
+
+    function trendLabel(values, unit = '', invert = false) {
+      if (values.length < 2) return null
+      const first = values[0]
+      const last = values[values.length - 1]
+      const diff = last - first
+      const pct = first > 0 ? Math.round((diff / first) * 100) : 0
+      if (Math.abs(pct) < 3) return `Estável (${unit ? last.toFixed(1) + unit : ''})`
+      const improving = invert ? diff < 0 : diff > 0
+      return `${improving ? 'Melhorando' : 'Piorando'} ${Math.abs(pct)}% (${unit ? last.toFixed(1) + unit : ''})`
+    }
+
+    function formatPace(pace) {
+      if (!pace) return null
+      const min = Math.floor(pace / 60)
+      const sec = Math.floor(pace % 60)
+      return `${min}:${sec.toString().padStart(2, '0')}/km`
+    }
+
+    const completed = workouts.value.filter(w => w.status === 'completed')
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    const thirtyDaysStr = thirtyDaysAgo.toLocaleDateString('sv-SE')
+    const recent30d = completed.filter(w => w.scheduled_date >= thirtyDaysStr)
+    const bestPace30d = recent30d.filter(w => w.actual_pace).reduce((min, w) => !min || w.actual_pace < min ? w.actual_pace : min, null)
+    const totalDist30d = recent30d.reduce((sum, w) => sum + (w.actual_distance || 0), 0)
+
+    const avgPainRecent = recent30d.filter(w => w.feedback_pain > 0)
+    const avgSleepRecent = recent30d.filter(w => w.feedback_sleep > 0)
+    const avgStressRecent = recent30d.filter(w => w.feedback_stress > 0)
+    let recoveryPatterns = null
+    if (avgPainRecent.length >= 3) {
+      const avgP = avgPainRecent.reduce((s, w) => s + w.feedback_pain, 0) / avgPainRecent.length
+      const avgS = avgSleepRecent.length > 0 ? avgSleepRecent.reduce((s, w) => s + w.feedback_sleep, 0) / avgSleepRecent.length : 0
+      const avgSt = avgStressRecent.length > 0 ? avgStressRecent.reduce((s, w) => s + w.feedback_stress, 0) / avgStressRecent.length : 0
+      recoveryPatterns = `Dor média: ${avgP.toFixed(1)}/10 | Sono: ${avgS.toFixed(1)}/5 | Estresse: ${avgSt.toFixed(1)}/5`
+    }
+
+    return {
+      paceTrend: trendLabel(paceValues, '/km', true),
+      distanceTrend: trendLabel(distValues, 'km'),
+      effortTrend: effortValues.length >= 2 ? trendLabel(effortValues, '/5', true) : null,
+      painTrend: painValues.length >= 2 ? trendLabel(painValues, '/10', true) : null,
+      bestPace30d: bestPace30d ? formatPace(bestPace30d) : null,
+      totalDistance30d: totalDist30d > 0 ? `${(totalDist30d / 1000).toFixed(1)}km` : null,
+      totalWorkouts30d: recent30d.length || null,
+      recoveryPatterns,
+    }
+  }
+
+  function getPreviousWeeks(currentWeekNumber, count = 3) {
+    const weeks = []
+    for (let w = Math.max(1, currentWeekNumber - count); w < currentWeekNumber; w++) {
+      weeks.push(getWeekStats(w))
+    }
+    return weeks
+  }
+
   async function saveWeekLog(weekNumber, startDate, endDate) {
     const stats = getWeekStats(weekNumber)
 
@@ -283,6 +359,9 @@ export const useWorkoutStore = defineStore('workouts', () => {
     deleteWorkout,
     getWeekWorkouts,
     getWeekStats,
+    getRecentWorkouts,
+    getTrends,
+    getPreviousWeeks,
     saveWeekLog,
   }
 })

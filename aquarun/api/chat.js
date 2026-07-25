@@ -12,40 +12,57 @@ export default async function handler(req, res) {
     const { prompt, history = [], context } = req.body
     if (!prompt) return res.status(400).json({ error: 'Prompt is required' })
 
-    let systemPrompt = `Você é o AquaRun Coach, um assistente de IA especializado em treinos de corrida e natação.
-Suas responsabilidades:
-- Criar planos de treino personalizados
-- Analisar performance do atleta
-- Dar dicas de técnica para corrida e natação
-- Ajustar treinos baseado no progresso
-- Responder dúvidas sobre treinamento
+    let systemPrompt = `Você é o AquaRun Coach, um treinador esportivo pessoal especializado em corrida de rua e natação (crawl).
+Seu conhecimento inclui treinamento periodizado, fisiologia do exercício, prevenção de lesões, recuperação e nutrição esportiva.
 
-Responda sempre em português brasileiro. Seja direto e prático.`
+Suas responsabilidades:
+- Criar e ajustar planos de treino personalizados
+- Analisar performance com dados reais e subjetivos
+- Identificar padrões de melhoria, estagnação ou risco
+- Dar dicas técnicas específicas para corrida e natação
+- Ajustar treinos baseado em evolução, sono, estresse e dor
+- Orientar sobre recuperação, aquecimento e alongamento
+- Responder dúvidas sobre treinamento com embasamento
+
+Responda sempre em português brasileiro. Seja direto, prático e motivador como um treinador pessoal de verdade.`
 
     if (context) {
       if (context.profile) {
         const p = context.profile
-        systemPrompt += `\n\nDADOS DO ATLETA:
+        const age = p.birth_date
+          ? Math.floor((Date.now() - new Date(p.birth_date).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+          : null
+        systemPrompt += `\n\nPERFIL COMPLETO DO ATLETA:
 - Nome: ${p.full_name || 'Não informado'}
-- Experiência: ${p.running_experience || 'Não informado'}
+- Idade: ${age ? age + ' anos' : 'não informado'}
+- Peso: ${p.weight ? p.weight + ' kg' : 'não informado'}
+- Altura: ${p.height ? p.height + ' cm' : 'não informado'}
+- Experiência corrida: ${p.running_experience || 'Não informado'}
+- Nível atividade: ${p.activity_level || 'Não informado'}
+- Ritmo confortável: ${p.comfortable_pace || 'Não informado'}
+- Ritmo-alvo: ${p.target_run_pace || 'Não informado'}
+- Distância-alvo: ${p.target_run_distance || 'Não informado'}
 - Dias de corrida: ${(p.run_days || []).join(', ') || 'Não definido'}
-- Dias de natação: ${(p.swim_days || []).join(', ') || 'Não definido'}`
+- Dias de natação: ${(p.swim_days || []).join(', ') || 'Não definido'}
+- Lesões atuais: ${p.current_injuries || 'nenhuma'}
+- Histórico de lesões: ${p.injury_history || 'nenhum'}
+- Medicamentos: ${p.medications || 'nenhum'}`
       }
 
       if (context.currentWeekWorkouts?.length) {
-        const today = context.today || new Date().toISOString().split('T')[0]
+        const today = context.today || new Date().toLocaleDateString('sv-SE')
         systemPrompt += `\n\nHOJE É DIA: ${today} (fuso horário do atleta)`
         systemPrompt += `\n\nTREINOS DESTA SEMANA:`
         for (const w of context.currentWeekWorkouts) {
           const isToday = w.scheduled_date === today
           const dayLabel = isToday ? ' (HOJE)' : ''
-          systemPrompt += `\n- ${w.name} (${w.type === 'swim' ? 'Natação' : 'Corrida'}) - ${w.scheduled_date}${dayLabel} - ${w.duration}min - Status: ${w.status === 'completed' ? 'Concluído' : 'Planejado'}`
+          systemPrompt += `\n- ${w.name} (${w.type === 'swim' ? 'Natação' : 'Corrida'}) - ${w.scheduled_date}${dayLabel} - ${w.duration}min - Status: ${w.status === 'completed' ? 'Concluído' : w.status === 'skipped' ? 'Pulado' : 'Planejado'}`
           if (w.status === 'completed') {
             if (w.actual_distance) systemPrompt += ` | Distância: ${(w.actual_distance / 1000).toFixed(2)}km`
-            if (w.actual_duration) systemPrompt += ` | Tempo: ${Math.floor(w.actual_duration / 60)}min`
+            if (w.actual_duration) systemPrompt += ` | Tempo: ${Math.floor(w.actual_duration / 60)}min${w.actual_duration % 60 ? ' ' + (w.actual_duration % 60) + 's' : ''}`
             if (w.actual_pace) {
-              const min = Math.floor(1000 / w.actual_pace / 60)
-              const sec = Math.floor((1000 / w.actual_pace) % 60)
+              const min = Math.floor(w.actual_pace / 60)
+              const sec = Math.floor(w.actual_pace % 60)
               systemPrompt += ` | Ritmo: ${min}:${sec.toString().padStart(2, '0')}/km`
             }
             if (w.actual_heartrate) systemPrompt += ` | BPM: ${Math.round(w.actual_heartrate)}`
@@ -61,11 +78,16 @@ Responda sempre em português brasileiro. Seja direto e prático.`
       }
 
       if (context.recentActivities?.length) {
-        systemPrompt += `\n\nATIVIDADES RECENTES DO STRAVA:`
-        for (const a of context.recentActivities.slice(0, 5)) {
+        systemPrompt += `\n\nATIVIDADES RECENTES DO STRAVA (últimas 5):`
+        for (const a of context.recentActivities) {
           const dist = a.distance >= 1000 ? `${(a.distance / 1000).toFixed(2)}km` : `${a.distance}m`
           const time = `${Math.floor(a.moving_time / 60)}min`
-          systemPrompt += `\n- ${a.name} (${a.type === 'swim' ? 'Natação' : 'Corrida'}) - ${dist} - ${time}`
+          const pace = a.moving_time > 0 && a.distance > 0 ? (() => {
+            const p = (a.moving_time * 1000 / a.distance)
+            return `${Math.floor(p / 60)}:${Math.floor(p % 60).toString().padStart(2, '0')}/km`
+          })() : ''
+          const hr = a.average_heartrate ? ` | BPM: ${Math.round(a.average_heartrate)}` : ''
+          systemPrompt += `\n- ${a.name} (${a.type === 'swim' ? 'Natação' : 'Corrida'}) - ${dist} - ${time} - ${pace}${hr}`
         }
       }
 
@@ -73,9 +95,26 @@ Responda sempre em português brasileiro. Seja direto e prático.`
         const s = context.weekStats
         systemPrompt += `\n\nRESUMO DA SEMANA:
 - Total de treinos: ${s.completed}/${s.total} concluídos
-- Distância corrida: ${(s.runDistance / 1000).toFixed(2)}km
-- Distância nadada: ${s.swimDistance}m
-- Esforço médio: ${s.avgEffort || 'Não informado'}`
+- Distância corrida: ${s.runDistance ? (s.runDistance / 1000).toFixed(2) + 'km' : '0km'}
+- Distância nadada: ${s.swimDistance ? (s.swimDistance / 1000).toFixed(2) + 'km' : '0km'}
+- Esforço médio: ${s.avgEffort || 'Não informado'}
+- Dor média: ${s.avgPain || 0}/10
+- Energia média: ${s.avgEnergy || 0}/5
+- Sono médio: ${s.avgSleep || 0}/5
+- Estresse médio: ${s.avgStress || 0}/5`
+      }
+
+      if (context.trends) {
+        const t = context.trends
+        systemPrompt += `\n\nTENDÊNCIAS E EVOLUÇÃO:`
+        if (t.paceTrend) systemPrompt += `\n- Ritmo: ${t.paceTrend}`
+        if (t.distanceTrend) systemPrompt += `\n- Distância semanal: ${t.distanceTrend}`
+        if (t.effortTrend) systemPrompt += `\n- Esforço percebido: ${t.effortTrend}`
+        if (t.painTrend) systemPrompt += `\n- Dor: ${t.painTrend}`
+        if (t.bestPace30d) systemPrompt += `\n- Melhor ritmo 30 dias: ${t.bestPace30d}`
+        if (t.totalDistance30d) systemPrompt += `\n- Distância total 30 dias: ${t.totalDistance30d}`
+        if (t.totalWorkouts30d) systemPrompt += `\n- Treinos nos últimos 30 dias: ${t.totalWorkouts30d}`
+        if (t.recoveryPatterns) systemPrompt += `\n- Padrões de recuperação: ${t.recoveryPatterns}`
       }
     }
 

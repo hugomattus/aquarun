@@ -134,6 +134,7 @@ async function sendMessage(text) {
     const workouts = currentWeekWorkouts.value
     const completed = workouts.filter(w => w.status === 'completed')
     const effortMap = { very_easy: 1, easy: 2, moderate: 3, hard: 4, very_hard: 5 }
+    const currentWeek = auth.profile?.current_week || 1
     const context = {
       today: new Date().toLocaleDateString('sv-SE'),
       profile: auth.profile,
@@ -145,7 +146,12 @@ async function sendMessage(text) {
         runDistance: completed.filter(w => w.type === 'run').reduce((s, w) => s + (w.actual_distance || 0), 0),
         swimDistance: completed.filter(w => w.type === 'swim').reduce((s, w) => s + (w.actual_distance || 0), 0),
         avgEffort: completed.length > 0 ? (completed.reduce((s, w) => s + (effortMap[w.feedback_effort] || 0), 0) / completed.length).toFixed(1) : null,
+        avgPain: completed.length > 0 ? (completed.reduce((s, w) => s + (w.feedback_pain || 0), 0) / completed.length).toFixed(1) : null,
+        avgEnergy: completed.length > 0 ? (completed.reduce((s, w) => s + (w.feedback_energy || 0), 0) / completed.length).toFixed(1) : null,
+        avgSleep: completed.length > 0 ? (completed.reduce((s, w) => s + (w.feedback_sleep || 0), 0) / completed.length).toFixed(1) : null,
+        avgStress: completed.length > 0 ? (completed.reduce((s, w) => s + (w.feedback_stress || 0), 0) / completed.length).toFixed(1) : null,
       },
+      trends: workoutStore.getTrends(currentWeek),
     }
     const response = await getAIResponse(userMsg, history, context)
     messages.value.push({ role: 'assistant', content: response })

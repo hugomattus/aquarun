@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   const GROQ_BASE_URL = 'https://api.groq.com/openai/v1'
 
   try {
-    const { profile, previousWeek, weekNumber } = req.body
+    const { profile, previousWeek, previousWeeks, trends, weekNumber } = req.body
 
     if (!profile || !previousWeek) {
       return res.status(400).json({ error: 'Perfil e dados da semana anterior são obrigatórios' })
@@ -158,6 +158,17 @@ FEEDBACK SUBJETIVO DO ATLETA:
 - Qualidade do sono média: ${pw.avg_sleep !== undefined ? pw.avg_sleep.toFixed(1) + '/10' : 'não informado'}
 - Estresse médio: ${pw.avg_stress !== undefined ? pw.avg_stress.toFixed(1) + '/10' : 'não informado'}
 - Relato de dores: ${pw.pain_report && pw.pain_report.length > 0 ? pw.pain_report : 'nenhum'}
+
+${previousWeeks?.length ? `TENDÊNCIA DAS ÚLTIMAS SEMANAS:
+${previousWeeks.map((w, i) => `- Semana ${i + 1}: ${w.completed_workouts}/${w.total_workouts} treinos | Corrida: ${w.total_run_distance ? (w.total_run_distance / 1000).toFixed(1) + 'km' : '0km'} | Ritmo médio: ${w.avg_run_pace ? (1000 / w.avg_run_pace / 60).toFixed(0) + ':' + Math.round((1000 / w.avg_run_pace % 60)).toString().padStart(2, '0') + '/km' : '-'} | Esforço: ${w.avg_effort ? w.avg_effort.toFixed(1) : '-'} | Dor: ${w.avg_pain ? w.avg_pain.toFixed(1) : '-'}`).join('\n')}` : ''}
+
+${trends ? `EVOLUÇÃO GERAL:
+${trends.paceTrend ? `- Ritmo: ${trends.paceTrend}` : ''}
+${trends.distanceTrend ? `- Distância: ${trends.distanceTrend}` : ''}
+${trends.effortTrend ? `- Esforço: ${trends.effortTrend}` : ''}
+${trends.painTrend ? `- Dor: ${trends.painTrend}` : ''}
+${trends.bestPace30d ? `- Melhor ritmo 30 dias: ${trends.bestPace30d}` : ''}
+${trends.totalDistance30d ? `- Distância total 30 dias: ${trends.totalDistance30d}` : ''}` : ''}
 
 ANÁLISE NECESSÁRIA:
 1. O atleta está superando o plano? (esforço baixo + performance acima)

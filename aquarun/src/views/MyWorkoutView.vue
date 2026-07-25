@@ -374,6 +374,7 @@ async function requestFeedback() {
   loadingFeedback.value = true
   try {
     const w = selectedWorkout.value
+    const currentWeek = auth.profile?.current_week || 1
     const res = await fetch('/api/workout-feedback', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -394,6 +395,23 @@ async function requestFeedback() {
           heartrate: w.actual_heartrate || null,
           maxHeartrate: w.actual_max_heartrate || null,
         },
+        profile: auth.profile,
+        recentWorkouts: workoutStore.getRecentWorkouts(w.type, 8),
+        weekStats: (() => {
+          const ws = workoutStore.getWeekStats(currentWeek)
+          return {
+            total: ws.total,
+            completed: ws.completed,
+            runDistance: ws.runDistance,
+            swimDistance: ws.swimDistance,
+            avgEffort: ws.avgEffort || null,
+            avgPain: ws.avgPain || null,
+            avgEnergy: ws.avgEnergy || null,
+            avgSleep: ws.avgSleep || null,
+            avgStress: ws.avgStress || null,
+          }
+        })(),
+        trends: workoutStore.getTrends(currentWeek),
       }),
     })
     if (res.ok) {
@@ -437,6 +455,15 @@ async function generateNextWeek() {
           avg_swim_pace: weekStats.avgSwimPace,
           pain_report: weekStats.painReports.join('; ') || null,
         },
+        previousWeeks: workoutStore.getPreviousWeeks(currentWeek.value, 3).map(ws => ({
+          total_workouts: ws.total,
+          completed_workouts: ws.completed,
+          total_run_distance: ws.runDistance,
+          avg_run_pace: ws.avgRunPace,
+          avg_effort: ws.avgEffort,
+          avg_pain: ws.avgPain,
+        })),
+        trends: workoutStore.getTrends(currentWeek.value),
         weekNumber: currentWeek.value + 1,
       }),
     })

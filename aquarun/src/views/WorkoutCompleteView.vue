@@ -429,12 +429,14 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useWorkoutStore } from '../stores/workouts'
 import { useStravaStore } from '../stores/strava'
+import { useAuthStore } from '../stores/auth'
 import { formatDistance, formatDuration, formatDate } from '../utils/formatters'
 import Icon from '../components/Icon.vue'
 
 const router = useRouter()
 const route = useRoute()
 const workoutStore = useWorkoutStore()
+const auth = useAuthStore()
 const strava = useStravaStore()
 
 const effortValues = ['very_easy', 'easy', 'moderate', 'hard', 'very_hard']
@@ -611,6 +613,24 @@ async function completeWorkout() {
         workout: { name: workout.value.name, type: workout.value.type, duration: workout.value.duration },
         feedback: feedback.value,
         performance: perfData,
+        profile: auth.profile,
+        recentWorkouts: workoutStore.getRecentWorkouts(workout.value.type, 8),
+        weekStats: (() => {
+          const currentWeek = auth.profile?.current_week || 1
+          const ws = workoutStore.getWeekStats(currentWeek)
+          return {
+            total: ws.total,
+            completed: ws.completed,
+            runDistance: ws.runDistance,
+            swimDistance: ws.swimDistance,
+            avgEffort: ws.avgEffort || null,
+            avgPain: ws.avgPain || null,
+            avgEnergy: ws.avgEnergy || null,
+            avgSleep: ws.avgSleep || null,
+            avgStress: ws.avgStress || null,
+          }
+        })(),
+        trends: workoutStore.getTrends(auth.profile?.current_week || 1),
       }),
     })
 

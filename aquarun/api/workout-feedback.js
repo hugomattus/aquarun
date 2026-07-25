@@ -7,9 +7,40 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   try {
-    const { workout, feedback, performance } = req.body
+    const { workout, feedback, performance, profile, recentWorkouts, weekStats, trends } = req.body
 
-    const perfLines = []
+    const effortMap = { very_easy: 1, easy: 2, moderate: 3, hard: 4, very_hard: 5 }
+    const effortNum = effortMap[feedback.effort] || 3
+    const effortLabel = { very_easy: 'Muito fácil', easy: 'Fácil', moderate: 'Normal', hard: 'Difícil', very_hard: 'Muito difícil' }
+
+    let systemPrompt = `Você é o AquaRun Coach, um treinador esportivo pessoal especializado em corrida e natação (crawl).
+Analise este treino e dê um feedback profundo, motivador e técnico em português brasileiro.
+
+REGRAS:
+- Seja direto e honesto, como um treinador pessoal
+- Use os dados históricos para comparar com treinos anteriores
+- Identifique padrões (melhoria, estagnação, risco de lesão)
+- Dê dicas práticas e específicas, não genéricas
+- Máximo 3 pontos positivos e 2 negativos
+- A dica deve ser aplicável no próximo treino`
+
+    if (profile) {
+      const age = profile.birth_date
+        ? Math.floor((Date.now() - new Date(profile.birth_date).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+        : null
+      systemPrompt += `\n\nPERFIL DO ATLETA:
+- Nome: ${profile.full_name || 'Atleta'}
+- Idade: ${age ? age + ' anos' : 'não informado'}
+- Peso: ${profile.weight ? profile.weight + ' kg' : 'não informado'}
+- Altura: ${profile.height ? profile.height + ' cm' : 'não informado'}
+- Experiência: ${profile.running_experience || 'não informado'}
+- Ritmo confortável: ${profile.comfortable_pace || 'não informado'}
+- Ritmo-alvo: ${profile.target_run_pace || 'não informado'}
+- Lesões atuais: ${profile.current_injuries || 'nenhuma'}
+- Histórico de lesões: ${profile.injury_history || 'nenhum'}`
+    }
+
+    let perfLines = []
     if (performance?.distance) perfLines.push(`Distância: ${(performance.distance / 1000).toFixed(2)} km`)
     if (performance?.duration) perfLines.push(`Tempo: ${Math.floor(performance.duration / 60)}min ${performance.duration % 60}s`)
     if (performance?.pace) {
@@ -20,17 +51,11 @@ export default async function handler(req, res) {
     if (performance?.heartrate) perfLines.push(`BPM médio: ${Math.round(performance.heartrate)}`)
     if (performance?.maxHeartrate) perfLines.push(`BPM máx: ${Math.round(performance.maxHeartrate)}`)
 
-    const effortMap = { very_easy: 1, easy: 2, moderate: 3, hard: 4, very_hard: 5 }
-    const effortNum = effortMap[feedback.effort] || 3
-    const effortLabel = { very_easy: 'Muito fácil', easy: 'Fácil', moderate: 'Normal', hard: 'Difícil', very_hard: 'Muito difícil' }
-
-    const prompt = `Analise este treino e dê um feedback direto e motivador em português brasileiro.
-
-TREINO: ${workout.name} (${workout.type === 'swim' ? 'Natação' : 'Corrida'})
-Duração planejada: ${workout.duration}min
-
-DADOS DO TREINO:
-${perfLines.length ? perfLines.join('\n') : 'Sem dados de performance'}
+    systemPrompt += `\n\nTREINO ATUAL:
+- Nome: ${workout.name} (${workout.type === 'swim' ? 'Natação' : 'Corrida'})
+- Duração planejada: ${workout.duration}min
+- Dados reais:
+${perfLines.length ? perfLines.map(l => `  ${l}`).join('\n') : '  Sem dados de performance'}
 
 FEEDBACK DO ATLETA:
 - Esforço percebido: ${effortLabel[feedback.effort] || 'Não informado'} (${effortNum}/5)
@@ -38,22 +63,47 @@ FEEDBACK DO ATLETA:
 - Sono: ${feedback.sleep || 'Não informado'}/5
 - Estresse: ${feedback.stress || 'Não informado'}/5
 - Dor muscular: ${feedback.pain || 0}/10
-${feedback.notes ? `- Observações: ${feedback.notes}` : ''}
+${feedback.notes ? `- Observações: ${feedback.notes}` : ''}`
 
-Responda EXATAMENTE neste formato JSON (sem markdown, sem \`\`\`):
+    if (recentWorkouts?.length) {
+      systemPrompt += `\n\nHISTÓRICO DE TREINOS RECENTES (mesmo tipo):`
+      for (const rw of recentWorkouts.slice(0, 8)) {
+        const rwPace = rw.actual_pace ? `${Math.floor(rw.actual_pace / 60)}:${Math.floor(rw.actual_pace % 60).toString().padStart(2, '0')}/km` : 'sem ritmo'
+        const rwDist = rw.actual_distance ? `${(rw.actual_distance / 1000).toFixed(2)}km` : 'sem distância'
+        const rwEffort = effortLabel[rw.feedback_effort] || '-'
+        systemPrompt += `\n- ${rw.name} (${rw.scheduled_date}) | ${rwDist} | ${rwPace} | Esforço: ${rwEffort} | Dor: ${rw.feedback_pain || 0}/10`
+      }
+    }
+
+    if (weekStats) {
+      systemPrompt += `\n\nRESUMO DA SEMANA ATUAL:
+- Treinos: ${weekStats.completed}/${weekStats.total} concluídos
+- Distância corrida: ${weekStats.runDistance ? (weekStats.runDistance / 1000).toFixed(2) + 'km' : '0km'}
+- Distância nadada: ${weekStats.swimDistance ? (weekStats.swimDistance / 1000).toFixed(2) + 'km' : '0km'}
+- Esforço médio: ${weekStats.avgEffort || 'não informado'}
+- Dor média: ${weekStats.avgPain || 0}/10
+- Energia média: ${weekStats.avgEnergy || 0}/5
+- Sono médio: ${weekStats.avgSleep || 0}/5
+- Estresse médio: ${weekStats.avgStress || 0}/5`
+    }
+
+    if (trends) {
+      systemPrompt += `\n\nTENDÊNCIAS (últimas semanas):`
+      if (trends.paceTrend) systemPrompt += `\n- Ritmo: ${trends.paceTrend}`
+      if (trends.distanceTrend) systemPrompt += `\n- Distância: ${trends.distanceTrend}`
+      if (trends.effortTrend) systemPrompt += `\n- Esforço percebido: ${trends.effortTrend}`
+      if (trends.painTrend) systemPrompt += `\n- Dor: ${trends.painTrend}`
+      if (trends.bestPace30d) systemPrompt += `\n- Melhor ritmo 30 dias: ${trends.bestPace30d}`
+      if (trends.totalDistance30d) systemPrompt += `\n- Distância total 30 dias: ${trends.totalDistance30d}`
+    }
+
+    systemPrompt += `\n\nResponda EXATAMENTE neste formato JSON (sem markdown, sem \`\`\`):
 {
-  "summary": "Resumo em 1 frase do treino",
-  "positive": ["ponto positivo 1", "ponto positivo 2"],
-  "negative": ["ponto negativo 1 ou vazio se não tiver"],
-  "tip": "Uma dica prática para o próximo treino"
-}
-
-Regras:
-- Seja direto e honesto
-- Máximo 3 pontos positivos e 2 negativos
-- A dica deve ser prática e aplicável
-- Se não houver dados de performance, analise apenas o feedback subjetivo
-- Responda APENAS o JSON, nada mais`
+  "summary": "Resumo em 1-2 frases do treino, comparando com histórico quando disponível",
+  "positive": ["ponto positivo 1 com base nos dados", "ponto positivo 2"],
+  "negative": ["ponto negativo ou vazio se não tiver"],
+  "tip": "Dica prática e específica para o próximo treino, baseada nos padrões identificados"
+}`
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -63,9 +113,9 @@ Regras:
       },
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{ role: 'user', content: systemPrompt }],
         temperature: 0.7,
-        max_tokens: 500,
+        max_tokens: 800,
       }),
     })
 
@@ -82,7 +132,7 @@ Regras:
       parsed = JSON.parse(content)
     } catch {
       parsed = {
-        summary: content.slice(0, 200),
+        summary: content.slice(0, 300),
         positive: ['Treino concluído com sucesso'],
         negative: [],
         tip: 'Continue mantendo a consistência nos treinos',
