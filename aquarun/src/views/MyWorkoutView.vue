@@ -131,9 +131,23 @@ const hasOnboardingData = computed(() => {
   return p?.run_days?.length > 0 || p?.swim_days?.length > 0
 })
 
-const weekWorkouts = computed(() =>
-  workoutStore.getWeekWorkouts(currentWeek.value)
-)
+const weekWorkouts = computed(() => {
+  const now = new Date()
+  const dayOfWeek = now.getDay()
+  const monday = new Date(now)
+  monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7))
+  monday.setHours(0, 0, 0, 0)
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 6)
+  sunday.setHours(23, 59, 59, 999)
+
+  const mondayStr = monday.toLocaleDateString('sv-SE')
+  const sundayStr = sunday.toLocaleDateString('sv-SE')
+
+  return workoutStore.workouts
+    .filter(w => w.scheduled_date >= mondayStr && w.scheduled_date <= sundayStr)
+    .sort((a, b) => a.scheduled_date.localeCompare(b.scheduled_date))
+})
 
 const weekProgress = computed(() => {
   const total = weekWorkouts.value.length
@@ -239,7 +253,6 @@ async function generateNextWeek() {
       if (workout.type === 'rest') continue
 
       let daysUntil = (targetDayIdx - startOfWeek.getDay() + 7) % 7
-      if (daysUntil === 0) daysUntil = 7
 
       const scheduledDate = new Date(startOfWeek)
       scheduledDate.setDate(startOfWeek.getDate() + daysUntil + weekOffset)

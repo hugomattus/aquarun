@@ -178,7 +178,6 @@ async function generatePlan() {
       if (workout.type === 'rest') continue
 
       let daysUntil = (targetDayIdx - startDayOfWeek + 7) % 7
-      if (daysUntil === 0) daysUntil = 7
 
       const scheduledDate = new Date(startOfWeek)
       scheduledDate.setDate(startOfWeek.getDate() + daysUntil)
