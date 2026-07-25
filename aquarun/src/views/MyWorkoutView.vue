@@ -185,22 +185,22 @@
                 <div>
                   <label class="block text-xs text-neutral-500 mb-1">Distância (km)</label>
                   <input v-model="editForm.distance" type="number" step="0.1" placeholder="5.0"
-                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
+                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:ring-0 focus:border-primary" />
                 </div>
                 <div>
                   <label class="block text-xs text-neutral-500 mb-1">Tempo (min:seg)</label>
                   <input v-model="editForm.duration" type="text" placeholder="45:30"
-                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
+                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:ring-0 focus:border-primary" />
                 </div>
                 <div>
                   <label class="block text-xs text-neutral-500 mb-1">Ritmo (min:seg/km)</label>
                   <input v-model="editForm.pace" type="text" placeholder="5:30"
-                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
+                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:ring-0 focus:border-primary" />
                 </div>
                 <div>
                   <label class="block text-xs text-neutral-500 mb-1">BPM médio</label>
                   <input v-model="editForm.heartrate" type="number" placeholder="140"
-                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
+                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:ring-0 focus:border-primary" />
                 </div>
               </div>
             </div>
@@ -233,7 +233,7 @@
                 <div>
                   <label class="block text-xs text-neutral-500 mb-1">Esforço</label>
                   <select v-model="editForm.effort"
-                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-primary">
+                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:ring-0 focus:border-primary">
                     <option value="">Selecione</option>
                     <option value="very_easy">Muito fácil</option>
                     <option value="easy">Fácil</option>
@@ -245,28 +245,28 @@
                 <div>
                   <label class="block text-xs text-neutral-500 mb-1">Energia (1-5)</label>
                   <input v-model="editForm.energy" type="number" min="1" max="5" placeholder="3"
-                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
+                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:ring-0 focus:border-primary" />
                 </div>
                 <div>
                   <label class="block text-xs text-neutral-500 mb-1">Sono (1-5)</label>
                   <input v-model="editForm.sleep" type="number" min="1" max="5" placeholder="3"
-                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
+                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:ring-0 focus:border-primary" />
                 </div>
                 <div>
                   <label class="block text-xs text-neutral-500 mb-1">Estresse (1-5)</label>
                   <input v-model="editForm.stress" type="number" min="1" max="5" placeholder="3"
-                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
+                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:ring-0 focus:border-primary" />
                 </div>
                 <div>
                   <label class="block text-xs text-neutral-500 mb-1">Dor (0-10)</label>
                   <input v-model="editForm.pain" type="number" min="0" max="10" placeholder="0"
-                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
+                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:ring-0 focus:border-primary" />
                 </div>
               </div>
               <div>
                 <label class="block text-xs text-neutral-500 mb-1">Observações</label>
                 <input v-model="editForm.notes" type="text" placeholder="Alguma observação..."
-                  class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
+                  class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:ring-0 focus:border-primary" />
               </div>
             </div>
             <div v-else-if="selectedWorkout.feedback_effort || selectedWorkout.feedback_energy || selectedWorkout.feedback_notes" class="bg-dark rounded p-3">
