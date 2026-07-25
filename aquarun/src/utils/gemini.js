@@ -2,11 +2,11 @@ const baseUrl = import.meta.env.DEV
   ? 'http://localhost:5173'
   : window.location.origin
 
-export async function getAIResponse(prompt, history = []) {
+export async function getAIResponse(prompt, history = [], context = null) {
   const response = await fetch(`${baseUrl}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, history }),
+    body: JSON.stringify({ prompt, history, context }),
   })
 
   if (!response.ok) {

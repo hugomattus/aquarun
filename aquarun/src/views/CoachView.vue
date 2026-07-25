@@ -87,14 +87,38 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, computed, onMounted } from 'vue'
 import { getAIResponse } from '../utils/gemini'
+import { useAuthStore } from '../stores/auth'
+import { useWorkoutStore } from '../stores/workouts'
+import { useStravaStore } from '../stores/strava'
 import Icon from '../components/Icon.vue'
+
+const auth = useAuthStore()
+const workoutStore = useWorkoutStore()
+const strava = useStravaStore()
 
 const chatContainer = ref(null)
 const input = ref('')
 const messages = ref([])
 const loading = ref(false)
+
+const todayStr = new Date().toLocaleDateString('sv-SE')
+
+const currentWeekWorkouts = computed(() => {
+  const now = new Date()
+  const dayOfWeek = now.getDay()
+  const monday = new Date(now)
+  monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7))
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 6)
+  const sundayStr = sunday.toLocaleDateString('sv-SE')
+  return workoutStore.workouts
+    .filter(w => w.scheduled_date >= todayStr && w.scheduled_date <= sundayStr)
+    .sort((a, b) => a.scheduled_date.localeCompare(b.scheduled_date))
+})
+
+const weekStats = computed(() => workoutStore.getWeekStats(0))
 
 async function sendMessage(text) {
   const userMsg = text || input.value.trim()
@@ -109,7 +133,13 @@ async function sendMessage(text) {
 
   try {
     const history = messages.value.slice(0, -1)
-    const response = await getAIResponse(userMsg, history)
+    const context = {
+      profile: auth.profile,
+      currentWeekWorkouts: currentWeekWorkouts.value,
+      recentActivities: strava.activities.slice(0, 5),
+      weekStats: weekStats.value,
+    }
+    const response = await getAIResponse(userMsg, history, context)
     messages.value.push({ role: 'assistant', content: response })
   } catch (e) {
     messages.value.push({
@@ -142,4 +172,12 @@ function formatMessage(text) {
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\n/g, '<br>')
 }
+
+onMounted(async () => {
+  await workoutStore.fetchWorkouts()
+  await strava.checkConnection()
+  if (strava.connected) {
+    await strava.fetchActivities()
+  }
+})
 </script>

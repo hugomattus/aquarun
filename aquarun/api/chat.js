@@ -9,10 +9,10 @@ export default async function handler(req, res) {
   const GROQ_BASE_URL = 'https://api.groq.com/openai/v1'
 
   try {
-    const { prompt, history = [] } = req.body
+    const { prompt, history = [], context } = req.body
     if (!prompt) return res.status(400).json({ error: 'Prompt is required' })
 
-    const systemPrompt = `Você é o AquaRun Coach, um assistente de IA especializado em treinos de corrida e natação.
+    let systemPrompt = `Você é o AquaRun Coach, um assistente de IA especializado em treinos de corrida e natação.
 Suas responsabilidades:
 - Criar planos de treino personalizados
 - Analisar performance do atleta
@@ -21,6 +21,51 @@ Suas responsabilidades:
 - Responder dúvidas sobre treinamento
 
 Responda sempre em português brasileiro. Seja direto e prático.`
+
+    if (context) {
+      if (context.profile) {
+        const p = context.profile
+        systemPrompt += `\n\nDADOS DO ATLETA:
+- Nome: ${p.full_name || 'Não informado'}
+- Experiência: ${p.running_experience || 'Não informado'}
+- Dias de corrida: ${(p.run_days || []).join(', ') || 'Não definido'}
+- Dias de natação: ${(p.swim_days || []).join(', ') || 'Não definido'}`
+      }
+
+      if (context.currentWeekWorkouts?.length) {
+        systemPrompt += `\n\nTREINOS DESTA SEMANA:`
+        for (const w of context.currentWeekWorkouts) {
+          systemPrompt += `\n- ${w.name} (${w.type === 'swim' ? 'Natação' : 'Corrida'}) - ${w.scheduled_date} - ${w.duration}min - Status: ${w.status === 'completed' ? 'Concluído' : 'Planejado'}`
+          if (w.status === 'completed') {
+            if (w.actual_distance) systemPrompt += ` | Distância: ${(w.actual_distance / 1000).toFixed(2)}km`
+            if (w.actual_pace) {
+              const min = Math.floor(1000 / w.actual_pace / 60)
+              const sec = Math.floor((1000 / w.actual_pace) % 60)
+              systemPrompt += ` | Ritmo: ${min}:${sec.toString().padStart(2, '0')}/km`
+            }
+            if (w.feedback_effort) systemPrompt += ` | Esforço: ${w.feedback_effort}`
+          }
+        }
+      }
+
+      if (context.recentActivities?.length) {
+        systemPrompt += `\n\nATIVIDADES RECENTES DO STRAVA:`
+        for (const a of context.recentActivities.slice(0, 5)) {
+          const dist = a.distance >= 1000 ? `${(a.distance / 1000).toFixed(2)}km` : `${a.distance}m`
+          const time = `${Math.floor(a.moving_time / 60)}min`
+          systemPrompt += `\n- ${a.name} (${a.type === 'swim' ? 'Natação' : 'Corrida'}) - ${dist} - ${time}`
+        }
+      }
+
+      if (context.weekStats) {
+        const s = context.weekStats
+        systemPrompt += `\n\nRESUMO DA SEMANA:
+- Total de treinos: ${s.completed}/${s.total} concluídos
+- Distância corrida: ${(s.runDistance / 1000).toFixed(2)}km
+- Distância nadada: ${s.swimDistance}m
+- Esforço médio: ${s.avgEffort || 'Não informado'}`
+      }
+    }
 
     const messages = [
       { role: 'system', content: systemPrompt },
