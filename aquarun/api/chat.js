@@ -33,9 +33,13 @@ Responda sempre em português brasileiro. Seja direto e prático.`
       }
 
       if (context.currentWeekWorkouts?.length) {
+        const today = new Date().toLocaleDateString('sv-SE')
+        systemPrompt += `\n\nHOJE É DIA: ${today}`
         systemPrompt += `\n\nTREINOS DESTA SEMANA:`
         for (const w of context.currentWeekWorkouts) {
-          systemPrompt += `\n- ${w.name} (${w.type === 'swim' ? 'Natação' : 'Corrida'}) - ${w.scheduled_date} - ${w.duration}min - Status: ${w.status === 'completed' ? 'Concluído' : 'Planejado'}`
+          const isToday = w.scheduled_date === today
+          const dayLabel = isToday ? ' (HOJE)' : ''
+          systemPrompt += `\n- ${w.name} (${w.type === 'swim' ? 'Natação' : 'Corrida'}) - ${w.scheduled_date}${dayLabel} - ${w.duration}min - Status: ${w.status === 'completed' ? 'Concluído' : 'Planejado'}`
           if (w.status === 'completed') {
             if (w.actual_distance) systemPrompt += ` | Distância: ${(w.actual_distance / 1000).toFixed(2)}km`
             if (w.actual_pace) {
