@@ -51,6 +51,12 @@ const routes = [
     meta: { auth: true, requiresOnboarding: true }
   },
   {
+    path: '/progress',
+    name: 'Progress',
+    component: () => import('../views/ProgressView.vue'),
+    meta: { auth: true, requiresOnboarding: true }
+  },
+  {
     path: '/coach',
     name: 'Coach',
     component: () => import('../views/CoachView.vue'),

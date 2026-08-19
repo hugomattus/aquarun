@@ -77,7 +77,7 @@
               {{ getWorkoutObjective(workout) }}
             </div>
           </div>
-          <div class="flex-shrink-0">
+          <div class="flex-shrink-0 flex flex-col items-end gap-1.5">
             <span
               v-if="workout.status === 'completed'"
               class="text-xs text-green-500"
@@ -97,6 +97,13 @@
               Pulado
             </span>
             <Icon v-else name="chevron-right" :size="18" class="text-neutral-600" />
+            <button
+              v-if="workout.status === 'missed'"
+              @click.stop="openReschedule(workout)"
+              class="text-xs text-primary hover:underline"
+            >
+              Reagendar
+            </button>
           </div>
         </div>
       </div>
@@ -404,6 +411,47 @@
         </div>
       </div>
     </Teleport>
+
+    <!-- Modal Reagendar Treino -->
+    <Teleport to="body">
+      <div
+        v-if="rescheduleTarget"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+        @click.self="rescheduleTarget = null"
+      >
+        <div class="bg-surface w-full max-w-sm rounded-lg border border-neutral-800 p-6 space-y-4">
+          <div>
+            <h3 class="font-medium text-white">Reagendar treino</h3>
+            <p class="text-sm text-neutral-500 mt-1">{{ rescheduleTarget.name }}</p>
+          </div>
+          <div>
+            <label class="block text-xs text-neutral-500 mb-1">Nova data</label>
+            <input
+              v-model="rescheduleDate"
+              type="date"
+              :min="tomorrowStr"
+              class="w-full bg-dark border border-neutral-800 rounded px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary/50"
+            />
+          </div>
+          <p v-if="rescheduleError" class="text-xs text-red-400">{{ rescheduleError }}</p>
+          <div class="flex justify-end gap-3">
+            <button
+              @click="rescheduleTarget = null"
+              class="px-4 py-2 rounded text-sm text-neutral-300 hover:bg-neutral-800"
+            >
+              Cancelar
+            </button>
+            <button
+              @click="confirmReschedule"
+              :disabled="rescheduling"
+              class="px-4 py-2 rounded text-sm font-medium bg-primary text-white hover:opacity-90 disabled:opacity-50"
+            >
+              {{ rescheduling ? 'Agendando...' : 'Reagendar' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -423,6 +471,16 @@ const loadingFeedback = ref(false)
 const showMenu = ref(false)
 const editingWorkout = ref(false)
 const savingEdit = ref(false)
+const rescheduleTarget = ref(null)
+const rescheduleDate = ref('')
+const rescheduleError = ref('')
+const rescheduling = ref(false)
+
+const tomorrowStr = computed(() => {
+  const d = new Date()
+  d.setDate(d.getDate() + 1)
+  return d.toLocaleDateString('sv-SE')
+})
 const editForm = ref({})
 
 const currentWeek = computed(() => auth.profile?.current_week || 0)
@@ -505,6 +563,28 @@ function closeWorkoutModal() {
   aiFeedback.value = null
   showMenu.value = false
   editingWorkout.value = false
+}
+
+function openReschedule(workout) {
+  rescheduleTarget.value = workout
+  rescheduleError.value = ''
+  const d = new Date()
+  d.setDate(d.getDate() + 1)
+  rescheduleDate.value = d.toLocaleDateString('sv-SE')
+}
+
+async function confirmReschedule() {
+  if (!rescheduleDate.value) return
+  rescheduling.value = true
+  rescheduleError.value = ''
+  try {
+    await workoutStore.rescheduleWorkout(rescheduleTarget.value.id, rescheduleDate.value)
+    rescheduleTarget.value = null
+  } catch (e) {
+    rescheduleError.value = e.message || 'Erro ao reagendar treino'
+  } finally {
+    rescheduling.value = false
+  }
 }
 
 function formatDurationInput(seconds) {

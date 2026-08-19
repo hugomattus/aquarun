@@ -11,11 +11,24 @@
         <div class="space-y-3">
           <label class="flex items-center justify-between">
             <span class="text-sm text-neutral-400">Lembretes de treino</span>
-            <div class="relative" @click="notifications.workoutReminder = !notifications.workoutReminder">
+            <div class="relative" @click="handleWorkoutReminderToggle">
               <div class="w-10 h-6 bg-neutral-700 rounded-full shadow-inner cursor-pointer" :class="notifications.workoutReminder ? 'bg-primary' : ''"></div>
               <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform cursor-pointer" :class="notifications.workoutReminder ? 'translate-x-4' : ''"></div>
             </div>
           </label>
+          <div v-if="notifications.workoutReminder" class="flex items-center justify-between gap-4">
+            <span class="text-sm text-neutral-400">Horário do lembrete</span>
+            <select
+              v-model="reminderTime"
+              class="bg-dark border border-neutral-800 rounded px-3 py-2 text-sm text-white focus:border-primary focus:outline-none"
+            >
+              <option v-for="t in timeOptions" :key="t" :value="t">{{ t }}</option>
+            </select>
+          </div>
+          <p v-if="pushStatusMsg" class="text-xs text-yellow-500">{{ pushStatusMsg }}</p>
+          <p v-else-if="notifications.workoutReminder" class="text-xs text-neutral-600">
+            Você receberá um lembrete no celular nos dias de treino.
+          </p>
           <label class="flex items-center justify-between">
             <span class="text-sm text-neutral-400">Atualizações do Coach</span>
             <div class="relative" @click="notifications.coachUpdates = !notifications.coachUpdates">
@@ -100,6 +113,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { supabase } from '../utils/supabase'
 import { setUnitSystem } from '../utils/formatters'
+import { enablePush, disablePush, pushSupported } from '../utils/push'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -108,6 +122,13 @@ const notifications = reactive({
   workoutReminder: true,
   coachUpdates: true,
 })
+
+const reminderTime = ref('07:00')
+const pushStatusMsg = ref('')
+const timeOptions = [
+  '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
+  '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00',
+]
 
 const selectedUnit = ref('km')
 const units = [
@@ -125,16 +146,50 @@ onMounted(() => {
   const settings = auth.profile?.settings || {}
   notifications.workoutReminder = settings.notifications?.workoutReminder ?? true
   notifications.coachUpdates = settings.notifications?.coachUpdates ?? true
+  reminderTime.value = settings.notifications?.reminderTime || '07:00'
   selectedUnit.value = settings.units === 'mi' ? 'mi' : 'km'
   setUnitSystem(selectedUnit.value)
+  if (!pushSupported()) {
+    pushStatusMsg.value = 'Notificações não suportadas neste navegador. Instale o app pelo celular (Chrome no Android ou Safari no iPhone).'
+  }
 })
+
+async function handleWorkoutReminderToggle() {
+  const togglingOn = !notifications.workoutReminder
+  notifications.workoutReminder = togglingOn
+  pushStatusMsg.value = ''
+
+  if (togglingOn) {
+    if (!pushSupported()) {
+      pushStatusMsg.value = 'Notificações não suportadas neste navegador. Instale o app pelo celular.'
+      return
+    }
+    const res = await enablePush(auth.user.id)
+    if (!res.ok) {
+      if (res.reason === 'denied') {
+        pushStatusMsg.value = 'Permissão bloqueada no navegador. Ative em Configurações do navegador e tente de novo.'
+      } else if (res.reason === 'missing-key') {
+        pushStatusMsg.value = 'Notificações não configuradas ainda. Tente novamente em instantes.'
+      } else {
+        pushStatusMsg.value = 'Não foi possível ativar as notificações. Tente novamente.'
+      }
+    }
+  } else {
+    await disablePush()
+    await supabase.from('push_subscriptions').delete().eq('user_id', auth.user.id)
+  }
+}
 
 async function save() {
   saving.value = true
   try {
     const settings = {
       ...(auth.profile?.settings || {}),
-      notifications: { ...notifications },
+      notifications: {
+        ...notifications,
+        reminderTime: reminderTime.value,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Sao_Paulo',
+      },
       units: selectedUnit.value,
     }
     const { error } = await supabase

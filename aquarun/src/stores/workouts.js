@@ -150,6 +150,22 @@ export const useWorkoutStore = defineStore('workouts', () => {
     workouts.value = workouts.value.filter(w => w.id !== workoutId)
   }
 
+  async function rescheduleWorkout(workoutId, scheduledDate) {
+    const { error } = await supabase
+      .from('workouts')
+      .update({ scheduled_date: scheduledDate, status: 'planned' })
+      .eq('id', workoutId)
+      .eq('user_id', auth.user.id)
+
+    if (error) throw error
+
+    const idx = workouts.value.findIndex(w => w.id === workoutId)
+    if (idx !== -1) {
+      workouts.value[idx].scheduled_date = scheduledDate
+      workouts.value[idx].status = 'planned'
+    }
+  }
+
   function getWeekWorkouts(weekNumber) {
     return workouts.value
       .filter(w => w.week_number === weekNumber)
@@ -457,6 +473,7 @@ export const useWorkoutStore = defineStore('workouts', () => {
     saveWorkoutFeedback,
     skipWorkout,
     deleteWorkout,
+    rescheduleWorkout,
     getWeekWorkouts,
     getWeekStats,
     getRecentWorkouts,

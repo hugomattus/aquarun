@@ -261,13 +261,37 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- ============================================
--- 8. RPC - Excluir dados do próprio usuário
+-- 8. TABELA DE INSCRIÇÕES PUSH (Web Push)
+-- ============================================
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  endpoint TEXT NOT NULL UNIQUE,
+  keys JSONB NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  last_reminder_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user_id ON push_subscriptions(user_id);
+
+ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own push subscriptions" ON push_subscriptions;
+DROP POLICY IF EXISTS "Users can insert own push subscriptions" ON push_subscriptions;
+DROP POLICY IF EXISTS "Users can delete own push subscriptions" ON push_subscriptions;
+CREATE POLICY "Users can view own push subscriptions" ON push_subscriptions FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own push subscriptions" ON push_subscriptions FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can delete own push subscriptions" ON push_subscriptions FOR DELETE USING (auth.uid() = user_id);
+
+-- ============================================
+-- 10. RPC - Excluir dados do próprio usuário
 -- ============================================
 CREATE OR REPLACE FUNCTION public.delete_my_data()
 RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
   DELETE FROM public.week_logs WHERE user_id = auth.uid();
+  DELETE FROM public.push_subscriptions WHERE user_id = auth.uid();
   DELETE FROM public.activities WHERE user_id = auth.uid();
   DELETE FROM public.workouts WHERE user_id = auth.uid();
   DELETE FROM public.profiles WHERE id = auth.uid();

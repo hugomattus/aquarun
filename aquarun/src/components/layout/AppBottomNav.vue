@@ -72,6 +72,7 @@ const showMenu = ref(false)
 const navItems = [
   { path: '/', icon: 'home', label: 'Início' },
   { path: '/my-workout', icon: 'award', label: 'Treino' },
+  { path: '/progress', icon: 'trending-up', label: 'Evolução' },
   { path: '/coach', icon: 'message-circle', label: 'Coach' },
   { path: '/history', icon: 'clock', label: 'Histórico' },
 ]
