@@ -67,12 +67,63 @@
         </button>
       </form>
     </div>
+
+    <div class="bg-surface rounded p-6 border border-neutral-800">
+      <h3 class="font-medium text-white mb-2">Plano de Treino</h3>
+      <p class="text-sm text-neutral-500 mb-4">
+        Apague o plano atual para gerar um novo do zero. Os treinos concluídos serão removidos.
+      </p>
+      <button
+        @click="confirmDelete = true"
+        class="px-4 py-2 rounded text-sm text-red-400 border border-red-500/30 hover:bg-red-500/10 transition-colors"
+      >
+        Apagar plano atual
+      </button>
+      <div v-if="planDeleted" class="mt-4 text-green-400 text-sm bg-green-500/10 p-3 rounded border border-green-500/20">
+        Plano apagado! Agora você pode gerar um novo.
+      </div>
+      <router-link
+        v-if="planDeleted"
+        to="/generating-plan"
+        class="mt-3 inline-block px-4 py-2 rounded bg-primary text-white text-sm font-medium hover:opacity-90"
+      >
+        Gerar novo plano
+      </router-link>
+    </div>
+
+    <div v-if="confirmDelete" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/70" @click="confirmDelete = false"></div>
+      <div class="relative bg-surface border border-neutral-800 rounded-lg p-6 max-w-sm w-full space-y-4">
+        <h3 class="font-medium text-white">Apagar plano de treino?</h3>
+        <p class="text-sm text-neutral-400">
+          Todos os treinos do plano serão removidos, incluindo os concluídos e seus registros.
+          Essa ação não pode ser desfeita.
+        </p>
+        <div class="flex justify-end gap-3">
+          <button
+            @click="confirmDelete = false"
+            class="px-4 py-2 rounded text-sm text-neutral-300 hover:bg-neutral-800"
+          >
+            Cancelar
+          </button>
+          <button
+            @click="deletePlan"
+            :disabled="deletingPlan"
+            class="px-4 py-2 rounded text-sm font-medium bg-red-500 text-white hover:bg-red-600 disabled:opacity-50"
+          >
+            {{ deletingPlan ? 'Apagando...' : 'Apagar tudo' }}
+          </button>
+        </div>
+        <p v-if="deleteError" class="text-xs text-red-400">{{ deleteError }}</p>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import { useWorkoutStore } from '../stores/workouts'
 import { supabase } from '../utils/supabase'
 
 const auth = useAuthStore()
@@ -81,6 +132,10 @@ const fcMax = ref(null)
 const loading = ref(false)
 const error = ref('')
 const success = ref(false)
+const confirmDelete = ref(false)
+const deletingPlan = ref(false)
+const deleteError = ref('')
+const planDeleted = ref(false)
 
 const initials = computed(() => {
   const email = auth.user?.email || ''
@@ -114,6 +169,33 @@ async function updateProfile() {
     error.value = e.message || 'Erro ao atualizar perfil'
   } finally {
     loading.value = false
+  }
+}
+
+async function deletePlan() {
+  deletingPlan.value = true
+  deleteError.value = ''
+  try {
+    const { error: err } = await supabase
+      .from('workouts')
+      .delete()
+      .eq('user_id', auth.user.id)
+    if (err) throw err
+
+    const { error: err2 } = await supabase
+      .from('week_logs')
+      .delete()
+      .eq('user_id', auth.user.id)
+    if (err2) throw err2
+
+    await auth.updateProfile({ current_week: 0 })
+    await workoutStore.loadWorkouts()
+    confirmDelete.value = false
+    planDeleted.value = true
+  } catch (e) {
+    deleteError.value = e.message || 'Erro ao apagar plano'
+  } finally {
+    deletingPlan.value = false
   }
 }
 </script>
