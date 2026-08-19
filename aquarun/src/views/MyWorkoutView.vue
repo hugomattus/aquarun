@@ -726,12 +726,15 @@ async function generateNextWeek() {
     const plan = await response.json()
 
     const today = new Date()
+    const todayMidnight = new Date()
+    todayMidnight.setHours(0, 0, 0, 0)
     const startOfWeek = new Date(today)
     startOfWeek.setDate(today.getDate() - ((today.getDay() + 6) % 7))
 
-    const calWeek = workoutStore.calendarWeekNumber()
-    const nextWeekNumber = Math.max(currentWeek.value + 1, calWeek || (currentWeek.value + 1))
-    const weekOffset = calWeek ? (nextWeekNumber - calWeek) * 7 : 7
+    const calWeek = workoutStore.calendarWeekNumber() || (currentWeek.value + 1)
+    const hasThisWeekWorkouts = workoutStore.workouts.some(w => w.week_number === calWeek)
+    const nextWeekNumber = hasThisWeekWorkouts ? Math.max(currentWeek.value + 1, calWeek + 1) : calWeek
+    const weekOffset = (nextWeekNumber - calWeek) * 7
 
     const dayNameToIndex = {
       domingo: 0, sunday: 0,
@@ -757,6 +760,10 @@ async function generateNextWeek() {
 
       const scheduledDate = new Date(startOfWeek)
       scheduledDate.setDate(startOfWeek.getDate() + daysUntil + weekOffset)
+
+      if (scheduledDate < todayMidnight) {
+        scheduledDate.setDate(scheduledDate.getDate() + 7)
+      }
 
       let workoutType = workout.type
       if (runDays.includes(targetDayIdx)) {

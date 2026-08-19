@@ -182,6 +182,12 @@ async function generatePlan() {
       const scheduledDate = new Date(startOfWeek)
       scheduledDate.setDate(startOfWeek.getDate() + daysUntil)
 
+      const todayMidnight = new Date()
+      todayMidnight.setHours(0, 0, 0, 0)
+      if (scheduledDate < todayMidnight) {
+        scheduledDate.setDate(scheduledDate.getDate() + 7)
+      }
+
       let workoutType = workout.type
       if (runDays.includes(targetDayIdx)) {
         workoutType = 'run'
