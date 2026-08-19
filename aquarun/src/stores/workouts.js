@@ -71,6 +71,8 @@ export const useWorkoutStore = defineStore('workouts', () => {
         actual_cadence: performance.cadence,
         actual_elevation: performance.elevation,
         actual_calories: performance.calories,
+        actual_strokes: performance.strokes,
+        actual_swolf: performance.swolf,
         actual_moving_time: performance.movingTime,
         actual_elapsed_time: performance.elapsedTime,
         splits: performance.splits,
@@ -236,6 +238,10 @@ export const useWorkoutStore = defineStore('workouts', () => {
       avgSwimPace: swims.length > 0
         ? swims.filter(w => w.actual_pace).reduce((sum, w) => sum + w.actual_pace, 0) / swims.filter(w => w.actual_pace).length
         : 0,
+      avgSwolf: swims.length > 0
+        ? swims.filter(w => w.actual_swolf).reduce((sum, w) => sum + w.actual_swolf, 0) / (swims.filter(w => w.actual_swolf).length || 1)
+        : 0,
+      totalStrokes: swims.reduce((sum, w) => sum + (w.actual_strokes || 0), 0),
       painReports: completed
         .filter(w => w.feedback_pain > 0)
         .map(w => `dor ${w.feedback_pain}/10`),

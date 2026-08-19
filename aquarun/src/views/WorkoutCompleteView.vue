@@ -162,7 +162,7 @@
             </div>
             <div class="bg-dark rounded p-3">
               <div class="text-neutral-500">Ritmo</div>
-              <div class="text-white">{{ workout.actual_pace ? formatPace(workout.actual_pace) : '-' }}</div>
+              <div class="text-white">{{ workout.actual_pace ? formatPace(workout.actual_pace, workout.type) : '-' }}</div>
             </div>
             <div class="bg-dark rounded p-3">
               <div class="text-neutral-500">BPM</div>
@@ -252,8 +252,8 @@
             <h3 class="text-sm font-medium text-white mb-4">Dados do treino</h3>
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-xs text-neutral-500 mb-1">Distância (km)</label>
-                <input v-model="manualData.distance" type="number" step="0.1" placeholder="5.0"
+                <label class="block text-xs text-neutral-500 mb-1">Distância ({{ workout?.type === 'swim' ? 'm' : 'km' }})</label>
+                <input v-model="manualData.distance" type="number" :step="workout?.type === 'swim' ? 1 : 0.1" :placeholder="workout?.type === 'swim' ? '1500' : '5.0'"
                   class="w-full bg-dark border border-neutral-800 rounded px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
               </div>
               <div>
@@ -262,8 +262,8 @@
                   class="w-full bg-dark border border-neutral-800 rounded px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
               </div>
               <div>
-                <label class="block text-xs text-neutral-500 mb-1">Ritmo (min/km)</label>
-                <input v-model="manualData.pace" type="text" placeholder="6:30"
+                <label class="block text-xs text-neutral-500 mb-1">Ritmo (min/{{ workout?.type === 'swim' ? '100m' : 'km' }})</label>
+                <input v-model="manualData.pace" type="text" :placeholder="workout?.type === 'swim' ? '2:10' : '6:30'"
                   class="w-full bg-dark border border-neutral-800 rounded px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
               </div>
               <div>
@@ -276,12 +276,22 @@
                 <input v-model="manualData.maxHeartrate" type="number" placeholder="175"
                   class="w-full bg-dark border border-neutral-800 rounded px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
               </div>
-              <div>
-                <label class="block text-xs text-neutral-500 mb-1">Cadência</label>
+              <div v-if="workout?.type !== 'swim'">
+                <label class="block text-xs text-neutral-500 mb-1">Cadência (spm)</label>
                 <input v-model="manualData.cadence" type="number" placeholder="170"
                   class="w-full bg-dark border border-neutral-800 rounded px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
               </div>
-              <div>
+              <div v-if="workout?.type === 'swim'">
+                <label class="block text-xs text-neutral-500 mb-1">SWOLF</label>
+                <input v-model="manualData.swolf" type="number" placeholder="45"
+                  class="w-full bg-dark border border-neutral-800 rounded px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
+              </div>
+              <div v-if="workout?.type === 'swim'">
+                <label class="block text-xs text-neutral-500 mb-1">Braçadas totais</label>
+                <input v-model="manualData.strokes" type="number" placeholder="600"
+                  class="w-full bg-dark border border-neutral-800 rounded px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
+              </div>
+              <div v-if="workout?.type !== 'swim'">
                 <label class="block text-xs text-neutral-500 mb-1">Elevação (m)</label>
                 <input v-model="manualData.elevation" type="number" placeholder="50"
                   class="w-full bg-dark border border-neutral-800 rounded px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-primary" />
@@ -465,6 +475,8 @@ const manualData = ref({
   heartrate: '',
   maxHeartrate: '',
   cadence: '',
+  strokes: '',
+  swolf: '',
   elevation: '',
   calories: '',
 })
@@ -508,12 +520,12 @@ function formatWorkoutDate(dateStr) {
   return d.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })
 }
 
-function formatPace(metersPerSecond) {
-  if (!metersPerSecond) return '-'
-  const paceSeconds = 1000 / metersPerSecond
-  const min = Math.floor(paceSeconds / 60)
-  const sec = Math.floor(paceSeconds % 60)
-  return `${min}:${sec.toString().padStart(2, '0')}/km`
+function formatPace(pace, type) {
+  if (!pace) return '-'
+  const min = Math.floor(pace / 60)
+  const sec = Math.floor(pace % 60)
+  const unit = type === 'swim' ? '/100m' : '/km'
+  return `${min}:${sec.toString().padStart(2, '0')}${unit}`
 }
 
 function selectActivity(activity) {
@@ -541,7 +553,8 @@ async function completeWorkout() {
       splits: a.splits || null,
     })
   } else if (manualData.value.distance || manualData.value.duration) {
-    const distance = manualData.value.distance ? parseFloat(manualData.value.distance) * 1000 : null
+    const isSwim = workout.value?.type === 'swim'
+    const distance = manualData.value.distance ? (isSwim ? parseFloat(manualData.value.distance) : parseFloat(manualData.value.distance) * 1000) : null
     const duration = manualData.value.duration ? (() => {
       const parts = manualData.value.duration.split(':')
       if (parts.length === 2) return parseInt(parts[0]) * 60 + parseInt(parts[1])
@@ -554,7 +567,7 @@ async function completeWorkout() {
         pace = parseInt(parts[0]) * 60 + parseInt(parts[1])
       }
     } else if (distance && duration) {
-      pace = duration * 1000 / distance
+      pace = isSwim ? (duration * 100 / distance) : (duration * 1000 / distance)
     }
 
     await workoutStore.saveWorkoutPerformance(workout.value.id, {
@@ -563,9 +576,11 @@ async function completeWorkout() {
       pace: pace,
       heartrate: manualData.value.heartrate ? parseFloat(manualData.value.heartrate) : null,
       maxHeartrate: manualData.value.maxHeartrate ? parseFloat(manualData.value.maxHeartrate) : null,
-      cadence: manualData.value.cadence ? parseFloat(manualData.value.cadence) : null,
-      elevation: manualData.value.elevation ? parseFloat(manualData.value.elevation) : null,
+      cadence: !isSwim && manualData.value.cadence ? parseFloat(manualData.value.cadence) : null,
+      elevation: !isSwim && manualData.value.elevation ? parseFloat(manualData.value.elevation) : null,
       calories: manualData.value.calories ? parseFloat(manualData.value.calories) : null,
+      strokes: isSwim && manualData.value.strokes ? parseInt(manualData.value.strokes) : null,
+      swolf: isSwim && manualData.value.swolf ? parseInt(manualData.value.swolf) : null,
       movingTime: duration,
       elapsedTime: duration,
       splits: null,
@@ -585,16 +600,19 @@ async function completeWorkout() {
 
   generatingFeedback.value = true
   try {
+    const isSwim = workout.value?.type === 'swim'
     const perfData = selectedActivity.value ? {
       distance: selectedActivity.value.distance,
       duration: selectedActivity.value.moving_time,
-      pace: selectedActivity.value.moving_time > 0 && selectedActivity.value.distance > 0 ? (selectedActivity.value.moving_time * 1000 / selectedActivity.value.distance) : null,
+      pace: selectedActivity.value.moving_time > 0 && selectedActivity.value.distance > 0 ? (isSwim ? (selectedActivity.value.moving_time * 100 / selectedActivity.value.distance) : (selectedActivity.value.moving_time * 1000 / selectedActivity.value.distance)) : null,
       heartrate: selectedActivity.value.average_heartrate,
       maxHeartrate: selectedActivity.value.max_heartrate,
-      elevation: selectedActivity.value.total_elevation_gain,
-      cadence: selectedActivity.value.average_cadence,
+      elevation: isSwim ? null : selectedActivity.value.total_elevation_gain,
+      cadence: isSwim ? null : selectedActivity.value.average_cadence,
+      strokes: isSwim ? selectedActivity.value.average_cadence : null,
+      swolf: isSwim ? selectedActivity.value.swolf : null,
     } : manualData.value.distance || manualData.value.duration ? {
-      distance: manualData.value.distance ? parseFloat(manualData.value.distance) * 1000 : null,
+      distance: manualData.value.distance ? (isSwim ? parseFloat(manualData.value.distance) : parseFloat(manualData.value.distance) * 1000) : null,
       duration: manualData.value.duration ? (() => {
         const parts = manualData.value.duration.split(':')
         if (parts.length === 2) return parseInt(parts[0]) * 60 + parseInt(parts[1])
@@ -603,9 +621,11 @@ async function completeWorkout() {
       pace: manualData.value.pace ? (() => {
         const parts = manualData.value.pace.split(':')
         return parts.length === 2 ? parseInt(parts[0]) * 60 + parseInt(parts[1]) : null
-      })() : (distance && duration) ? (duration * 1000 / distance) : null,
+      })() : (distance && duration) ? (isSwim ? (duration * 100 / distance) : (duration * 1000 / distance)) : null,
       heartrate: manualData.value.heartrate ? parseFloat(manualData.value.heartrate) : null,
       maxHeartrate: manualData.value.maxHeartrate ? parseFloat(manualData.value.maxHeartrate) : null,
+      strokes: isSwim && manualData.value.strokes ? parseInt(manualData.value.strokes) : null,
+      swolf: isSwim && manualData.value.swolf ? parseInt(manualData.value.swolf) : null,
     } : null
 
     const res = await fetch('/api/workout-feedback', {

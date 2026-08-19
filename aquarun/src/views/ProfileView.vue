@@ -37,6 +37,19 @@
           />
         </div>
 
+        <div>
+          <label class="block text-sm text-neutral-500 mb-1">FC Máxima (bpm)</label>
+          <input
+            v-model.number="fcMax"
+            type="number"
+            min="100"
+            max="230"
+            class="w-full px-4 py-3 bg-dark rounded border border-neutral-800 focus:border-primary focus:ring-1 focus:ring-primary/50 focus:outline-none transition-all text-sm text-white placeholder-neutral-600"
+            placeholder="Ex: 185"
+          />
+          <p class="text-xs text-neutral-600 mt-1">Usado para calibrar a intensidade dos seus treinos. Se não souber, deixe vazio.</p>
+        </div>
+
         <div v-if="success" class="text-green-400 text-sm bg-green-500/10 p-3 rounded border border-green-500/20">
           Perfil atualizado com sucesso!
         </div>
@@ -60,9 +73,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import { supabase } from '../utils/supabase'
 
 const auth = useAuthStore()
 const fullName = ref('')
+const fcMax = ref(null)
 const loading = ref(false)
 const error = ref('')
 const success = ref(false)
@@ -78,6 +93,7 @@ const userName = computed(() => {
 
 onMounted(() => {
   fullName.value = auth.profile?.full_name || ''
+  fcMax.value = auth.profile?.fc_max || null
 })
 
 async function updateProfile() {
@@ -86,9 +102,9 @@ async function updateProfile() {
   success.value = false
 
   try {
-    const { error: err } = await auth.supabase
+    const { error: err } = await supabase
       .from('profiles')
-      .upsert({ id: auth.user.id, full_name: fullName.value })
+      .upsert({ id: auth.user.id, full_name: fullName.value, fc_max: fcMax.value || null })
 
     if (err) throw err
     await auth.fetchProfile()

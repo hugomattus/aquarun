@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   const GROQ_BASE_URL = 'https://api.groq.com/openai/v1'
 
   try {
-    const { profile, previousWeek, previousWeeks, trends, weekNumber } = req.body
+    const { profile, previousWeek, previousWeeks, trends, recentWorkouts, weekNumber } = req.body
 
     if (!profile || !previousWeek) {
       return res.status(400).json({ error: 'Perfil e dados da semana anterior são obrigatórios' })
@@ -68,7 +68,9 @@ REGRAS FUNDAMENTAIS:
 10. Se estresse > 7, treinos mais leves e técnicos
 11. Respeite lesões e limitações do atleta
 12. Natação: APENAS crawl. Nunca gerar peito, costas, borboleta ou medley
-13. Retorne APENAS JSON válido
+13. NUNCA use zonas de FC (Z1, Z2, Z3...) como instrução. Prescreva sempre PACE ESPECÍFICO em min/km (ex: "aquecimento a 6:30/km", "tiros a 4:45/km")
+14. O atleta é leigo e precisa saber exatamente a que ritmo correr
+15. Retorne APENAS JSON válido
 
 TIPOS DE TREINO CORRIDA:
 - regenerativo: recuperação ativa, ritmo bem leve
@@ -99,17 +101,17 @@ ESTRUTURA OBRIGÓRIA DO JSON RETORNADO:
       "day": "Segunda",
       "type": "run",
       "name": "Nome do treino",
-      "duration": 45,
+      "duration": 60,
       "structure": {
         "objective": "Desenvolver resistência aeróbica base. 2-3 frases explicando por que existe, que adaptação fisiológica busca, como ajuda a evoluir.",
-        "warmup": "10 minutos de trote\nPace entre 6:30 e 6:50/km\nZona 1-2\nRespiração confortável",
+        "warmup": "10 minutos de trote\nPace entre 6:30 e 6:50/km\nRespiração confortável, sem pressa",
         "mobility": ["Mobilidade de tornozelo: 10 repetições cada lado", "Mobilidade de quadril: 10 círculos cada lado"],
         "drills": ["Skipping alto: 3x20 metros, joelho alto, braço oposto, postura ereta"],
         "activation": "4 acelerações de 80 metros\nRecuperação caminhando",
-        "main_part": "6 x 800m\nPace: 4:55-5:00/km\nZona 3-4\nDescanso: 2 minutos trotando",
-        "cooldown": "5-10 minutos de trote leve\nAlongamento leve",
-        "attention_points": ["Manter cadência entre 170-180spm", "Evitar acelerar no início", "Controlar FC"],
-        "adaptation_criteria": "Se FC ultrapassar Zona 5, reduzir ritmo em 5s/km. Se não conseguir completar, diminuir uma série.",
+        "main_part": "6 x 800m\nPace-alvo: 5:00/km\nDescanso: 2 minutos trotando a 6:30/km\nFoque em manter ritmo constante",
+        "cooldown": "5-10 minutos de trote leve a 7:00/km\nAlongamento leve",
+        "attention_points": ["Manter cadência entre 170-180spm", "Evitar acelerar no início", "Manter pace-alvo de 5:00/km"],
+        "adaptation_criteria": "Se não conseguir manter 5:00/km, aumente para 5:15/km. Se não conseguir completar, diminuir uma série.",
         "coach_message": "Hoje o foco é consistência. Faça cada quilômetro com controle."
       }
     }
@@ -120,11 +122,13 @@ IMPORTANTE sobre a estrutura:
 - Cada treino DEVE ter todas as seções da structure
 - mobility, drills e activation são OPCIONAIS - inclua apenas quando fizer sentido
 - warmup e cooldown sempre incluídos
-- main_part extremamente detalhado
+- main_part extremamente detalhado com PACES ESPECÍFICOS (ex: 5:00/km, 6:30/km)
+- NUNCA use "Zona 1", "Zona 2" nas instruções. Use sempre pace numérico
 - objective explica o PROPÓSITO em 2-3 frases
 - attention_points são orientações práticas
 - adaptation_criteria explica como adaptar
 - coach_message é motivador e humano
+- DURAÇÕES MÍNIMAS: treinos leves/regenerativos ≥ 30min, moderados ≥ 40min, longão ≥ 60min, intervalado ≥ 45min, natação ≥ 30min
 
 NUNCA inclua treinos de natação que não sejam crawl.`
 
@@ -141,12 +145,13 @@ DADOS DO ATLETA:
 - Distância-alvo: ${profile.target_run_distance || 'não informado'}
 - FC Máxima: ${profile.fc_max ? profile.fc_max + ' bpm' : 'não informado'}
 - VO2max estimado: ${profile.vo2_max ? profile.vo2_max + ' ml/kg/min' : 'não informado'}
-${profile.fc_max ? (() => { const z = calcZones(profile.fc_max); return z ? `- Zonas de FC:
+${profile.fc_max ? (() => { const z = calcZones(profile.fc_max); return z ? `\nZONAS DE FC (use como referência interna, NÃO prescreva zonas — use pace):
   Z1: ${z.z1}
   Z2: ${z.z2}
   Z3: ${z.z3}
   Z4: ${z.z4}
   Z5: ${z.z5}` : '' })() : ''}
+- Tempo disponível por dia: 40 a 60 minutos (NÃO exceder 60min)
 ${hasSwimming ? `- Experiência natação: ${profile.swimming_experience}
 - Estilo principal: ${profile.main_stroke || 'não informado'}
 - Ritmo 100m: ${profile.swim_pace || 'não informado'}
@@ -168,7 +173,9 @@ PERFORMANCE DA SEMANA ANTERIOR:
 - BPM médio corrida: ${pw.avg_heartrate ? Math.round(pw.avg_heartrate) : 'não informado'}
 - BPM máximo médio corrida: ${pw.avg_max_heartrate ? Math.round(pw.avg_max_heartrate) : 'não informado'}
 - Elevação total: ${pw.total_elevation ? Math.round(pw.total_elevation) + 'm' : 'não informado'}
-- Cadência média: ${pw.avg_cadence ? Math.round(pw.avg_cadence) + ' spm' : 'não informado'}
+- Cadência média corrida: ${pw.avg_cadence ? Math.round(pw.avg_cadence) + ' spm' : 'não informado'}
+- SWOLF médio natação: ${pw.avg_swolf ? Math.round(pw.avg_swolf) : 'não informado'}
+- Braçadas totais natação: ${pw.total_strokes ? pw.total_strokes : 'não informado'}
 - Ritmo médio corrida: ${pw.avg_run_pace ? (1000 / pw.avg_run_pace / 60).toFixed(0) + ':' + Math.round((1000 / pw.avg_run_pace % 60)).toString().padStart(2, '0') + '/km' : 'não informado'}
 ${hasSwimming ? `- Ritmo médio natação/100m: ${pw.avg_swim_pace ? (pw.avg_swim_pace * 100).toFixed(0) + 's' : 'não informado'}` : ''}
 
@@ -192,6 +199,17 @@ ${trends.painTrend ? `- Dor: ${trends.painTrend}` : ''}
 ${trends.bestPace30d ? `- Melhor ritmo 30 dias: ${trends.bestPace30d}` : ''}
 ${trends.totalDistance30d ? `- Distância total 30 dias: ${trends.totalDistance30d}` : ''}` : ''}
 
+${recentWorkouts?.length ? `TREINOS RECENTES DO ATLETA (com observações):
+${recentWorkouts.map(rw => {
+  const paceUnit = rw.type === 'swim' ? '/100m' : '/km'
+  const pace = rw.actual_pace ? `${Math.floor(rw.actual_pace / 60)}:${Math.floor(rw.actual_pace % 60).toString().padStart(2, '0')}${paceUnit}` : '-'
+  const dist = rw.actual_distance ? (rw.type === 'swim' ? `${Math.round(rw.actual_distance)}m` : `${(rw.actual_distance / 1000).toFixed(2)}km`) : '-'
+  const effort = { very_easy: 'Muito fácil', easy: 'Fácil', moderate: 'Normal', hard: 'Difícil', very_hard: 'Muito difícil' }[rw.feedback_effort] || '-'
+  let line = `- ${rw.name} (${rw.scheduled_date}) | ${dist} | ${pace} | Esforço: ${effort} | Dor: ${rw.feedback_pain || 0}/10`
+  if (rw.feedback_notes) line += `\n  Observação do atleta: "${rw.feedback_notes}"`
+  return line
+}).join('\n')}` : ''}
+
 ANÁLISE NECESSÁRIA:
 1. O atleta está superando o plano? (esforço baixo + performance acima)
 2. O atleta está tendo dificuldade? (esforço alto + não completou tudo)
@@ -212,6 +230,10 @@ INSTRUÇÕES:
 10. Nunca coloque dois treinos intensos consecutivos
 11. Cada treino DEVE ter a seção structure completa
 12. Natação: APENAS crawl
+13. NUNCA use "Zona 1", "Zona 2" etc nas instruções. Prescreva sempre PACE ESPECÍFICO em min/km (ex: "trote a 6:30/km", "tiros a 4:45/km")
+14. DURAÇÕES MÍNIMAS: treino leve/regenerativo ≥ 30min, moderado ≥ 40min, longão ≥ 60min, intervalado ≥ 45min, natação ≥ 30min
+15. O atleta tem em média 40 a 60 minutos por dia. NÃO exceder 60min
+16. LEIA AS OBSERVAÇÕES DO ATLETA nos dados dos treinos anteriores. Ele escreve feedbacks com dicas valiosas — evolua os treinos com base no que ele relata (ex: se ele diz que um ritmo tá pesado, ajuste. Se ele diz que tá fácil, aumente)
 
 Retorne APENAS o JSON, sem markdown, sem código.`
 

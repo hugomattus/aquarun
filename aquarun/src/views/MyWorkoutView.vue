@@ -183,8 +183,8 @@
               <div class="text-xs font-medium text-neutral-400">Performance</div>
               <div class="grid grid-cols-2 gap-2">
                 <div>
-                  <label class="block text-xs text-neutral-500 mb-1">Distância (km)</label>
-                  <input v-model="editForm.distance" type="number" step="0.1" placeholder="5.0"
+                  <label class="block text-xs text-neutral-500 mb-1">Distância ({{ selectedWorkout?.type === 'swim' ? 'm' : 'km' }})</label>
+                  <input v-model="editForm.distance" type="number" :step="selectedWorkout?.type === 'swim' ? 1 : 0.1" :placeholder="selectedWorkout?.type === 'swim' ? '1500' : '5.0'"
                     class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:ring-0 focus:border-primary" />
                 </div>
                 <div>
@@ -193,13 +193,23 @@
                     class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:ring-0 focus:border-primary" />
                 </div>
                 <div>
-                  <label class="block text-xs text-neutral-500 mb-1">Ritmo (min:seg/km)</label>
-                  <input v-model="editForm.pace" type="text" placeholder="5:30"
+                  <label class="block text-xs text-neutral-500 mb-1">Ritmo (min:seg/{{ selectedWorkout?.type === 'swim' ? '100m' : 'km' }})</label>
+                  <input v-model="editForm.pace" type="text" :placeholder="selectedWorkout?.type === 'swim' ? '2:10' : '5:30'"
                     class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:ring-0 focus:border-primary" />
                 </div>
                 <div>
                   <label class="block text-xs text-neutral-500 mb-1">BPM médio</label>
                   <input v-model="editForm.heartrate" type="number" placeholder="140"
+                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:ring-0 focus:border-primary" />
+                </div>
+                <div v-if="selectedWorkout?.type === 'swim'">
+                  <label class="block text-xs text-neutral-500 mb-1">SWOLF</label>
+                  <input v-model="editForm.swolf" type="number" placeholder="45"
+                    class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:ring-0 focus:border-primary" />
+                </div>
+                <div v-if="selectedWorkout?.type === 'swim'">
+                  <label class="block text-xs text-neutral-500 mb-1">Braçadas totais</label>
+                  <input v-model="editForm.strokes" type="number" placeholder="600"
                     class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:ring-0 focus:border-primary" />
                 </div>
               </div>
@@ -217,11 +227,19 @@
                 </div>
                 <div v-if="selectedWorkout.actual_pace">
                   <span class="text-neutral-500">Ritmo:</span>
-                  <span class="text-white ml-1">{{ formatPace(selectedWorkout.actual_pace) }}</span>
+                  <span class="text-white ml-1">{{ formatPace(selectedWorkout.actual_pace, selectedWorkout.type) }}</span>
                 </div>
                 <div v-if="selectedWorkout.actual_heartrate">
                   <span class="text-neutral-500">BPM:</span>
                   <span class="text-white ml-1">{{ Math.round(selectedWorkout.actual_heartrate) }}</span>
+                </div>
+                <div v-if="selectedWorkout.type === 'swim' && selectedWorkout.actual_swolf">
+                  <span class="text-neutral-500">SWOLF:</span>
+                  <span class="text-white ml-1">{{ Math.round(selectedWorkout.actual_swolf) }}</span>
+                </div>
+                <div v-if="selectedWorkout.type === 'swim' && selectedWorkout.actual_strokes">
+                  <span class="text-neutral-500">Braçadas:</span>
+                  <span class="text-white ml-1">{{ selectedWorkout.actual_strokes }}</span>
                 </div>
               </div>
             </div>
@@ -394,17 +412,10 @@ const hasOnboardingData = computed(() => {
 })
 
 const weekWorkouts = computed(() => {
-  const now = new Date()
-  const dayOfWeek = now.getDay()
-  const sunday = new Date(now)
-  sunday.setDate(now.getDate() + (7 - dayOfWeek) % 7)
-  sunday.setHours(23, 59, 59, 999)
-
-  const startDate = auth.profile?.start_date || now.toLocaleDateString('sv-SE')
-  const sundayStr = sunday.toLocaleDateString('sv-SE')
-
+  const week = currentWeek.value
+  if (!week) return []
   return workoutStore.workouts
-    .filter(w => w.scheduled_date >= startDate && w.scheduled_date <= sundayStr)
+    .filter(w => w.week_number === week)
     .sort((a, b) => a.scheduled_date.localeCompare(b.scheduled_date))
 })
 
@@ -453,11 +464,12 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
-function formatPace(pace) {
+function formatPace(pace, type) {
   if (!pace) return ''
   const min = Math.floor(pace / 60)
   const sec = Math.floor(pace % 60)
-  return `${min}:${sec.toString().padStart(2, '0')}/km`
+  const unit = type === 'swim' ? '/100m' : '/km'
+  return `${min}:${sec.toString().padStart(2, '0')}${unit}`
 }
 
 function openWorkoutModal(workout) {
@@ -504,11 +516,14 @@ function parsePaceInput(str) {
 
 function startEdit() {
   const w = selectedWorkout.value
+  const isSwim = w.type === 'swim'
   editForm.value = {
-    distance: w.actual_distance ? (w.actual_distance / 1000).toFixed(1) : '',
+    distance: w.actual_distance ? (isSwim ? Math.round(w.actual_distance) : (w.actual_distance / 1000).toFixed(1)) : '',
     duration: formatDurationInput(w.actual_duration),
     pace: formatPaceInput(w.actual_pace),
     heartrate: w.actual_heartrate ? Math.round(w.actual_heartrate) : '',
+    strokes: w.actual_strokes || '',
+    swolf: w.actual_swolf || '',
     effort: w.feedback_effort || '',
     energy: w.feedback_energy || '',
     sleep: w.feedback_sleep || '',
@@ -529,10 +544,11 @@ async function saveEdit() {
   savingEdit.value = true
   try {
     const w = selectedWorkout.value
-    const distance = editForm.value.distance ? parseFloat(editForm.value.distance) * 1000 : null
+    const isSwim = w.type === 'swim'
+    const distance = editForm.value.distance ? (isSwim ? parseFloat(editForm.value.distance) : parseFloat(editForm.value.distance) * 1000) : null
     const duration = parseDurationInput(editForm.value.duration)
     let pace = parsePaceInput(editForm.value.pace)
-    if (!pace && distance && duration) pace = duration * 1000 / distance
+    if (!pace && distance && duration) pace = isSwim ? (duration * 100 / distance) : (duration * 1000 / distance)
 
     await workoutStore.saveWorkoutPerformance(w.id, {
       distance,
@@ -543,6 +559,8 @@ async function saveEdit() {
       cadence: null,
       elevation: null,
       calories: null,
+      strokes: w.type === 'swim' && editForm.value.strokes ? parseInt(editForm.value.strokes) : null,
+      swolf: w.type === 'swim' && editForm.value.swolf ? parseInt(editForm.value.swolf) : null,
       movingTime: duration,
       elapsedTime: duration,
       splits: null,
@@ -661,6 +679,8 @@ async function generateNextWeek() {
           avg_cadence: weekStats.avgCadence,
           avg_run_pace: weekStats.avgRunPace,
           avg_swim_pace: weekStats.avgSwimPace,
+          avg_swolf: weekStats.avgSwolf,
+          total_strokes: weekStats.totalStrokes,
           pain_report: weekStats.painReports.join('; ') || null,
         },
         previousWeeks: workoutStore.getPreviousWeeks(currentWeek.value, 3).map(ws => ({
@@ -672,6 +692,7 @@ async function generateNextWeek() {
           avg_pain: ws.avgPain,
         })),
         trends: workoutStore.getTrends(currentWeek.value),
+        recentWorkouts: workoutStore.getRecentWorkouts(null, 12),
         weekNumber: currentWeek.value + 1,
       }),
     })
@@ -687,6 +708,7 @@ async function generateNextWeek() {
     const startOfWeek = new Date(today)
     startOfWeek.setDate(today.getDate() - ((today.getDay() + 6) % 7))
 
+    const nextWeekNumber = currentWeek.value + 1
     const weekOffset = (nextWeekNumber - 1) * 7
 
     const dayNameToIndex = {
@@ -703,7 +725,6 @@ async function generateNextWeek() {
     const swimDays = (auth.profile.swim_days || []).map(d => dayNameToIndex[d]).filter(d => d !== undefined)
 
     const nextWeek = plan.week || []
-    const nextWeekNumber = currentWeek.value + 1
 
     for (const workout of nextWeek) {
       const targetDayIdx = dayNameToIndex[workout.day.toLowerCase()]

@@ -64,8 +64,9 @@ REGRAS FUNDAMENTAIS:
 7. Considere idade, peso, experiência e nível de atividade
 8. Se há data de prova, faça periodização com tapering
 9. Natação: APENAS crawl. Nunca gerar peito, costas, borboleta ou medley
-10. Se FC máxima foi informada, USE as zonas de FC para prescrever intensidade (ex: "trote em Zona 2", "tiros em Zona 4")
-11. Retorne APENAS JSON válido
+10. NUNCA use zonas de FC (Z1, Z2, Z3...) como instrução ao atleta. Em vez disso, prescreva PACE ESPECÍFICO. Exemplo: "trote a 6:30/km", "tiros a 4:45/km", "aquecimento a 7:00/km"
+11. O atleta é leigo e pode não saber o que são zonas. Use sempre pace como referência prática
+12. Retorne APENAS JSON válido
 
 TIPOS DE TREINO CORRIDA:
 - regenerativo: recuperação ativa, ritmo bem leve
@@ -95,17 +96,17 @@ ESTRUTURA OBRIGÓRIA DO JSON RETORNADO:
       "day": "Segunda",
       "type": "run",
       "name": "Nome do treino",
-      "duration": 45,
+      "duration": 60,
       "structure": {
         "objective": "Desenvolver resistência aeróbica base. 2-3 frases explicando por que existe, que adaptação fisiológica busca, como ajuda a evoluir.",
-        "warmup": "10 minutos de trote\nPace entre 6:30 e 6:50/km\nZona 1-2\nRespiração confortável",
+        "warmup": "10 minutos de trote\nPace entre 6:30 e 6:50/km\nRespiração confortável, sem pressa",
         "mobility": ["Mobilidade de tornozelo: 10 repetições cada lado, amplitude controlada", "Mobilidade de quadril: 10 círculos cada lado"],
         "drills": ["Skipping alto: 3x20 metros, joelho alto, braço oposto, postura ereta"],
         "activation": "4 acelerações de 80 metros\nRecuperação caminhando entre cada uma",
-        "main_part": "6 x 800m\nPace: 4:55-5:00/km\nZona 3-4\nDescanso: 2 minutos trotando",
-        "cooldown": "5-10 minutos de trote leve\nAlongamento leve de quadril e panturrilha",
-        "attention_points": ["Manter cadência entre 170-180spm", "Evitar acelerar no início das séries", "Controlar FC, não deixar passar da Zona 4"],
-        "adaptation_criteria": "Se FC ultrapassar Zona 5 antes do final, reduzir ritmo em 5s/km. Se não conseguir completar todas as séries, diminuir uma série.",
+        "main_part": "6 x 800m\nPace-alvo: 5:00/km\nDescanso: 2 minutos trotando a 6:30/km\nFoque em manter ritmo constante, sem acelerar no final",
+        "cooldown": "5-10 minutos de trote leve a 7:00/km\nAlongamento leve de quadril e panturrilha",
+        "attention_points": ["Manter cadência entre 170-180spm", "Evitar acelerar no início das séries", "Manter o pace-alvo de 5:00/km em cada série"],
+        "adaptation_criteria": "Se não conseguir manter 5:00/km, aumente para 5:15/km. Se não conseguir completar todas as séries, diminuir uma série.",
         "coach_message": "Hoje o foco não é velocidade, mas consistência. Faça cada quilômetro com controle. É esse tipo de treino que constrói desempenho nas próximas semanas."
       }
     }
@@ -116,13 +117,15 @@ IMPORTANTE sobre a estrutura:
 - Cada treino DEVE ter todas as seções da structure (objective, warmup, main_part, cooldown, attention_points, adaptation_criteria, coach_message)
 - As seções mobility, drills e activation são OPCIONAIS - inclua apenas quando fizer sentido para o tipo de treino
 - O warmup e cooldown devem ser sempre incluídos
-- O main_part deve ser extremamente detalhado com séries, repetições, distâncias, paces, zonas e descanso
+- O main_part deve ser extremamente detalhado com séries, repetições, distâncias, PACES ESPECÍFICOS (ex: 5:00/km, 6:30/km) e descanso
+- NUNCA use "Zona 1", "Zona 2" etc nas instruções. Use sempre pace numérico
 - O objective deve explicar o PROPÓSITO do treino em 2-3 frases
 - Os attention_points devem ser orientações práticas durante o treino
 - O adaptation_criteria deve explicar como adaptar se o atleta não conseguir cumprir
 - O coach_message deve ser motivador e humano
+- DURAÇÕES MÍNIMAS: treinos leves e regenerativos pelo menos 30min, moderados pelo menos 40min, longão pelo menos 60min, intervalado pelo menos 45min, natação pelo menos 30min
 
-NUNCA inclua treinos de natação que não sejam crawl. educationalis de crawl permitidos: catch-up, crawl com um braço, polegar na coxa, pernada com prancha, respiração bilateral.`
+NUNCA inclua treinos de natação que não sejam crawl. Educativos de crawl permitidos: catch-up, crawl com um braço, polegar na coxa, pernada com prancha, respiração bilateral.`
 
     const userPrompt = `CRIE O PLANO DE TREINO SEMANAL PARA ESTE ATLETA:
 
@@ -142,13 +145,12 @@ EXPERIÊNCIA E NÍVEL:
 - Distância-alvo corrida: ${profile.target_run_distance || 'não informado'}
 - FC Máxima: ${profile.fc_max ? profile.fc_max + ' bpm' : 'não informado'}
 - VO2max estimado: ${profile.vo2_max ? profile.vo2_max + ' ml/kg/min' : 'não informado'}
-${profile.fc_max ? (() => { const z = calcZones(profile.fc_max); return z ? `- Zonas de FC (USE para prescrever intensidade):
-  Z1 (Recuperação): ${z.z1}
-  Z2 (Aeróbico base): ${z.z2}
-  Z3 (Aeróbico/limiar): ${z.z3}
-  Z4 (Limiar): ${z.z4}
-  Z5 (VO2max): ${z.z5}
-IMPORTANTE: Ao prescrever intensidade, use as ZONAS DE FC acima. Por exemplo: "trote em Zona 2", "tiros em Zona 4-5", "aquecimento em Zona 1".` : '' })() : ''}
+${profile.fc_max ? (() => { const z = calcZones(profile.fc_max); return z ? `\nZONAS DE FC (use como referência interna para entender intensidade, mas NÃO prescreva zonas nas instruções — use pace):
+  Z1: ${z.z1}
+  Z2: ${z.z2}
+  Z3: ${z.z3}
+  Z4: ${z.z4}
+  Z5: ${z.z5}` : '' })() : ''}
 
 NATAÇÃO${hasSwimming ? ' (PRATICA)' : ' (NÃO PRATICA)'}:
 ${hasSwimming ? `- Experiência: ${profile.swimming_experience}
@@ -173,7 +175,9 @@ AGENDAMENTO:
 - Dias de corrida: ${runDaysLabels || 'não definido'}
 ${hasSwimming ? `- Dias de natação: ${swimDaysLabels || 'não definido'}` : ''}
 - Dia do longão: ${longRunLabel}
-- Objetivo corrida: ${profile.run_goal || 'não informado'}${raceInfo}
+- Objetivo corrida: ${profile.run_goal || 'não informado'}
+- Tempo disponível por dia: 40 a 60 minutos (NÃO exceder 60min)
+${raceInfo}
 
 INSTRUÇÕES:
 1. Cada dia de corrida deve ter UM treino COMPLETO com todas as seções da structure
@@ -186,6 +190,9 @@ INSTRUÇÕES:
 8. Se tem data de prova, crie progressão adequada
 9. Cada treino DEVE ter a seção structure completa com objective, warmup, main_part, cooldown, attention_points, adaptation_criteria, coach_message
 10. Natação: APENAS crawl. Nunca gerar outros estilos
+11. IMPORTANTE: NUNCA use termos como "Zona 1", "Zona 2" etc nas instruções. Prescreva sempre PACE ESPECÍFICO em min/km (ex: "aquecimento a 6:30/km", "tiros a 4:45/km", "trote a 7:00/km")
+12. O atleta é leigo e precisa saber exatamente a que ritmo correr em cada parte do treino
+13. DURAÇÕES MÍNIMAS: treino leve/regenerativo ≥ 30min, moderado ≥ 40min, longão ≥ 60min, intervalado ≥ 45min, natação ≥ 30min
 
 Retorne APENAS o JSON, sem markdown, sem código, sem explicações extras.`
 

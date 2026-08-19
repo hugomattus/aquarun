@@ -22,7 +22,10 @@ REGRAS:
 - Identifique padrões (melhoria, estagnação, risco de lesão)
 - Dê dicas práticas e específicas, não genéricas
 - Máximo 3 pontos positivos e 2 negativos
-- A dica deve ser aplicável no próximo treino`
+- A dica deve ser aplicável no próximo treino
+- NUNCA use zonas de FC (Z1, Z2...) nas orientações. Sempre prescreva pace em min/km (ex: "próximo treino: aquecimento a 6:30/km, principal a 5:15/km")
+- O atleta é leigo e precisa saber exatamente a que ritmo correr
+- O atleta tem em média 40 a 60 minutos por dia para treinar. Dicas de treino devem respeitar essa janela`
 
     function calcZones(fcMax) {
       if (!fcMax || fcMax < 100 || fcMax > 230) return null
@@ -54,30 +57,29 @@ REGRAS:
 - Histórico de lesões: ${profile.injury_history || 'nenhum'}`
 
       if (profile.fc_max) {
-        const zones = calcZones(profile.fc_max)
-        if (zones) {
-          systemPrompt += `\n\nZONAS DE FC:
-- Zona 1: ${zones.z1}
-- Zona 2: ${zones.z2}
-- Zona 3: ${zones.z3}
-- Zona 4: ${zones.z4}
-- Zona 5: ${zones.z5}`
-        }
+        systemPrompt += `\n\nFC Máxima informada: ${profile.fc_max} bpm (use apenas como referência interna, NÃO prescreva zonas ao atleta)`
       }
     }
 
     let perfLines = []
-    if (performance?.distance) perfLines.push(`Distância: ${(performance.distance / 1000).toFixed(2)} km`)
+    const isSwimPerf = workout?.type === 'swim'
+    if (performance?.distance) perfLines.push(`Distância: ${isSwimPerf ? Math.round(performance.distance) + ' m' : (performance.distance / 1000).toFixed(2) + ' km'}`)
     if (performance?.duration) perfLines.push(`Tempo: ${Math.floor(performance.duration / 60)}min ${performance.duration % 60}s`)
     if (performance?.pace) {
       const min = Math.floor(performance.pace / 60)
       const sec = Math.floor(performance.pace % 60)
-      perfLines.push(`Ritmo: ${min}:${sec.toString().padStart(2, '0')}/km`)
+      const paceUnit = isSwimPerf ? '/100m' : '/km'
+      perfLines.push(`Ritmo: ${min}:${sec.toString().padStart(2, '0')}${paceUnit}`)
     }
     if (performance?.heartrate) perfLines.push(`BPM médio: ${Math.round(performance.heartrate)}`)
     if (performance?.maxHeartrate) perfLines.push(`BPM máx: ${Math.round(performance.maxHeartrate)}`)
     if (performance?.elevation) perfLines.push(`Elevação: ${Math.round(performance.elevation)}m`)
-    if (performance?.cadence) perfLines.push(`Cadência: ${Math.round(performance.cadence)}spm`)
+    if (isSwimPerf) {
+      if (performance?.swolf) perfLines.push(`SWOLF: ${Math.round(performance.swolf)}`)
+      if (performance?.strokes) perfLines.push(`Braçadas totais: ${Math.round(performance.strokes)}`)
+    } else {
+      if (performance?.cadence) perfLines.push(`Cadência: ${Math.round(performance.cadence)}spm`)
+    }
 
     systemPrompt += `\n\nTREINO ATUAL:
 - Nome: ${workout.name} (${workout.type === 'swim' ? 'Natação' : 'Corrida'})
@@ -97,10 +99,11 @@ ${feedback.notes ? `- Observações: ${feedback.notes}` : ''}`
     if (recentWorkouts?.length) {
       systemPrompt += `\n\nHISTÓRICO DE TREINOS RECENTES (mesmo tipo) - dados preenchidos pelo atleta:`
       for (const rw of recentWorkouts.slice(0, 8)) {
-        const rwPace = rw.actual_pace ? `${Math.floor(rw.actual_pace / 60)}:${Math.floor(rw.actual_pace % 60).toString().padStart(2, '0')}/km` : 'sem ritmo'
-        const rwDist = rw.actual_distance ? `${(rw.actual_distance / 1000).toFixed(2)}km` : 'sem distância'
+        const rwPaceUnit = rw.type === 'swim' ? '/100m' : '/km'
+        const rwPace = rw.actual_pace ? `${Math.floor(rw.actual_pace / 60)}:${Math.floor(rw.actual_pace % 60).toString().padStart(2, '0')}${rwPaceUnit}` : 'sem ritmo'
+        const rwDist = rw.actual_distance ? (rw.type === 'swim' ? `${Math.round(rw.actual_distance)}m` : `${(rw.actual_distance / 1000).toFixed(2)}km`) : 'sem distância'
         const rwEffort = effortLabel[rw.feedback_effort] || '-'
-        systemPrompt += `\n- ${rw.name} (${rw.scheduled_date}) | ${rwDist} | ${rwPace} | Esforço: ${rwEffort} | Dor: ${rw.feedback_pain || 0}/10`
+        systemPrompt += `\n- ${rw.name} (${rw.scheduled_date}) | ${rwDist} | ${rwPace} | Esforço: ${rwEffort} | Dor: ${rw.feedback_pain || 0}/10${rw.feedback_notes ? ' | Obs: ' + rw.feedback_notes : ''}`
       }
     }
 

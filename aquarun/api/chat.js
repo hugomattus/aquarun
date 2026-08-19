@@ -24,7 +24,9 @@ Suas responsabilidades:
 - Orientar sobre recuperação, aquecimento e alongamento
 - Responder dúvidas sobre treinamento com embasamento
 
-Responda sempre em português brasileiro. Seja direto, prático e motivador como um treinador pessoal de verdade.`
+Responda sempre em português brasileiro. Seja direto, prático e motivador como um treinador pessoal de verdade.
+NUNCA use zonas de FC (Z1, Z2...) nas orientações. Sempre prescreva pace específico em min/km (ex: "corra a 5:30/km"). O atleta é leigo e precisa saber exatamente a que ritmo correr.
+O atleta tem em média 40 a 60 minutos por dia para treinar. Nunca sugira treinos acima de 60min.`
 
     function calcZones(fcMax) {
       if (!fcMax || fcMax < 100 || fcMax > 230) return null
@@ -63,15 +65,7 @@ Responda sempre em português brasileiro. Seja direto, prático e motivador como
 - Medicamentos: ${p.medications || 'nenhum'}`
 
         if (p.fc_max) {
-          const zones = calcZones(p.fc_max)
-          if (zones) {
-            systemPrompt += `\n\nZONAS DE FC (baseadas em FC max ${p.fc_max} bpm):
-- Zona 1: ${zones.z1}
-- Zona 2: ${zones.z2}
-- Zona 3: ${zones.z3}
-- Zona 4: ${zones.z4}
-- Zona 5: ${zones.z5}`
-          }
+          systemPrompt += `\n\nFC Máxima: ${p.fc_max} bpm (use como referência, NÃO prescreva zonas ao atleta)`
         }
       }
 
@@ -84,17 +78,23 @@ Responda sempre em português brasileiro. Seja direto, prático e motivador como
           const dayLabel = isToday ? ' (HOJE)' : ''
           systemPrompt += `\n- ${w.name} (${w.type === 'swim' ? 'Natação' : 'Corrida'}) - ${w.scheduled_date}${dayLabel} - ${w.duration}min - Status: ${w.status === 'completed' ? 'Concluído' : w.status === 'skipped' ? 'Pulado' : 'Planejado'}`
           if (w.status === 'completed') {
-            if (w.actual_distance) systemPrompt += ` | Distância: ${(w.actual_distance / 1000).toFixed(2)}km`
+            if (w.actual_distance) systemPrompt += ` | Distância: ${w.type === 'swim' ? Math.round(w.actual_distance) + 'm' : (w.actual_distance / 1000).toFixed(2) + 'km'}`
             if (w.actual_duration) systemPrompt += ` | Tempo: ${Math.floor(w.actual_duration / 60)}min${w.actual_duration % 60 ? ' ' + (w.actual_duration % 60) + 's' : ''}`
             if (w.actual_pace) {
               const min = Math.floor(w.actual_pace / 60)
               const sec = Math.floor(w.actual_pace % 60)
-              systemPrompt += ` | Ritmo: ${min}:${sec.toString().padStart(2, '0')}/km`
+              const paceUnit = w.type === 'swim' ? '/100m' : '/km'
+              systemPrompt += ` | Ritmo: ${min}:${sec.toString().padStart(2, '0')}${paceUnit}`
             }
             if (w.actual_heartrate) systemPrompt += ` | BPM médio: ${Math.round(w.actual_heartrate)}`
             if (w.actual_max_heartrate) systemPrompt += ` | BPM máx: ${Math.round(w.actual_max_heartrate)}`
             if (w.actual_elevation) systemPrompt += ` | Elevação: ${Math.round(w.actual_elevation)}m`
-            if (w.actual_cadence) systemPrompt += ` | Cadência: ${Math.round(w.actual_cadence)}spm`
+            if (w.type === 'swim') {
+              if (w.actual_swolf) systemPrompt += ` | SWOLF: ${Math.round(w.actual_swolf)}`
+              if (w.actual_strokes) systemPrompt += ` | Braçadas: ${w.actual_strokes}`
+            } else {
+              if (w.actual_cadence) systemPrompt += ` | Cadência: ${Math.round(w.actual_cadence)}spm`
+            }
             const effortMap = { very_easy: 'Muito fácil', easy: 'Fácil', moderate: 'Normal', hard: 'Difícil', very_hard: 'Muito difícil' }
             if (w.feedback_effort) systemPrompt += ` | Esforço: ${effortMap[w.feedback_effort] || w.feedback_effort}`
             if (w.feedback_energy) systemPrompt += ` | Energia: ${w.feedback_energy}/5`
@@ -111,9 +111,11 @@ Responda sempre em português brasileiro. Seja direto, prático e motivador como
         for (const a of context.recentActivities) {
           const dist = a.distance >= 1000 ? `${(a.distance / 1000).toFixed(2)}km` : `${a.distance}m`
           const time = `${Math.floor(a.moving_time / 60)}min`
+          const isSwimAct = a.type === 'swim'
           const pace = a.moving_time > 0 && a.distance > 0 ? (() => {
-            const p = (a.moving_time * 1000 / a.distance)
-            return `${Math.floor(p / 60)}:${Math.floor(p % 60).toString().padStart(2, '0')}/km`
+            const p = isSwimAct ? (a.moving_time * 100 / a.distance) : (a.moving_time * 1000 / a.distance)
+            const pUnit = isSwimAct ? '/100m' : '/km'
+            return `${Math.floor(p / 60)}:${Math.floor(p % 60).toString().padStart(2, '0')}${pUnit}`
           })() : ''
           const hr = a.average_heartrate ? ` | BPM: ${Math.round(a.average_heartrate)}` : ''
           const elev = a.total_elevation_gain ? ` | Elev: ${Math.round(a.total_elevation_gain)}m` : ''
