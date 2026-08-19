@@ -97,9 +97,9 @@ O atleta tem em média 40 a 60 minutos por dia para treinar. Nunca sugira treino
             }
             const effortMap = { very_easy: 'Muito fácil', easy: 'Fácil', moderate: 'Normal', hard: 'Difícil', very_hard: 'Muito difícil' }
             if (w.feedback_effort) systemPrompt += ` | Esforço: ${effortMap[w.feedback_effort] || w.feedback_effort}`
-            if (w.feedback_energy) systemPrompt += ` | Energia: ${w.feedback_energy}/5`
-            if (w.feedback_sleep) systemPrompt += ` | Sono: ${w.feedback_sleep}/5`
-            if (w.feedback_stress) systemPrompt += ` | Estresse: ${w.feedback_stress}/5`
+            if (w.feedback_energy) systemPrompt += ` | Energia: ${w.feedback_energy}/10`
+            if (w.feedback_sleep) systemPrompt += ` | Sono: ${w.feedback_sleep}/10`
+            if (w.feedback_stress) systemPrompt += ` | Estresse: ${w.feedback_stress}/10`
             if (w.feedback_pain) systemPrompt += ` | Dor: ${w.feedback_pain}/10`
             if (w.feedback_notes) systemPrompt += ` | Obs: ${w.feedback_notes}`
           }
@@ -134,9 +134,9 @@ O atleta tem em média 40 a 60 minutos por dia para treinar. Nunca sugira treino
 - BPM máx médio corrida: ${s.avgMaxHeartrate ? Math.round(s.avgMaxHeartrate) : 'não informado'}
 - Esforço médio: ${s.avgEffort || 'Não informado'}
 - Dor média: ${s.avgPain || 0}/10
-- Energia média: ${s.avgEnergy || 0}/5
-- Sono médio: ${s.avgSleep || 0}/5
-- Estresse médio: ${s.avgStress || 0}/5`
+- Energia média: ${s.avgEnergy || 0}/10
+- Sono médio: ${s.avgSleep || 0}/10
+- Estresse médio: ${s.avgStress || 0}/10`
       }
 
       if (context.trends) {

@@ -301,7 +301,7 @@ export const useWorkoutStore = defineStore('workouts', () => {
       const avgP = avgPainRecent.reduce((s, w) => s + w.feedback_pain, 0) / avgPainRecent.length
       const avgS = avgSleepRecent.length > 0 ? avgSleepRecent.reduce((s, w) => s + w.feedback_sleep, 0) / avgSleepRecent.length : 0
       const avgSt = avgStressRecent.length > 0 ? avgStressRecent.reduce((s, w) => s + w.feedback_stress, 0) / avgStressRecent.length : 0
-      recoveryPatterns = `Dor média: ${avgP.toFixed(1)}/10 | Sono: ${avgS.toFixed(1)}/5 | Estresse: ${avgSt.toFixed(1)}/5`
+      recoveryPatterns = `Dor média: ${avgP.toFixed(1)}/10 | Sono: ${avgS.toFixed(1)}/10 | Estresse: ${avgSt.toFixed(1)}/10`
     }
 
     return {

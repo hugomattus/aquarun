@@ -261,18 +261,18 @@
                   </select>
                 </div>
                 <div>
-                  <label class="block text-xs text-neutral-500 mb-1">Energia (1-5)</label>
-                  <input v-model="editForm.energy" type="number" min="1" max="5" placeholder="3"
+                  <label class="block text-xs text-neutral-500 mb-1">Energia (0-10)</label>
+                  <input v-model="editForm.energy" type="number" min="0" max="10" placeholder="5"
                     class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:ring-0 focus:border-primary" />
                 </div>
                 <div>
-                  <label class="block text-xs text-neutral-500 mb-1">Sono (1-5)</label>
-                  <input v-model="editForm.sleep" type="number" min="1" max="5" placeholder="3"
+                  <label class="block text-xs text-neutral-500 mb-1">Sono (0-10)</label>
+                  <input v-model="editForm.sleep" type="number" min="0" max="10" placeholder="5"
                     class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:ring-0 focus:border-primary" />
                 </div>
                 <div>
-                  <label class="block text-xs text-neutral-500 mb-1">Estresse (1-5)</label>
-                  <input v-model="editForm.stress" type="number" min="1" max="5" placeholder="3"
+                  <label class="block text-xs text-neutral-500 mb-1">Estresse (0-10)</label>
+                  <input v-model="editForm.stress" type="number" min="0" max="10" placeholder="5"
                     class="w-full bg-surface border border-neutral-800 rounded px-2 py-1.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:ring-0 focus:border-primary" />
                 </div>
                 <div>
@@ -296,15 +296,15 @@
                 </div>
                 <div v-if="selectedWorkout.feedback_energy">
                   <span class="text-neutral-500">Energia:</span>
-                  <span class="text-white ml-1">{{ selectedWorkout.feedback_energy }}/5</span>
+                  <span class="text-white ml-1">{{ selectedWorkout.feedback_energy }}/10</span>
                 </div>
                 <div v-if="selectedWorkout.feedback_sleep">
                   <span class="text-neutral-500">Sono:</span>
-                  <span class="text-white ml-1">{{ selectedWorkout.feedback_sleep }}/5</span>
+                  <span class="text-white ml-1">{{ selectedWorkout.feedback_sleep }}/10</span>
                 </div>
                 <div v-if="selectedWorkout.feedback_stress">
                   <span class="text-neutral-500">Estresse:</span>
-                  <span class="text-white ml-1">{{ selectedWorkout.feedback_stress }}/5</span>
+                  <span class="text-white ml-1">{{ selectedWorkout.feedback_stress }}/10</span>
                 </div>
                 <div v-if="selectedWorkout.feedback_pain">
                   <span class="text-neutral-500">Dor:</span>

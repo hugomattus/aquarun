@@ -90,9 +90,9 @@ IMPORTANTE: Os dados acima foram preenchidos manualmente pelo atleta ao concluir
 
 FEEDBACK DO ATLETA:
 - Esforço percebido: ${effortLabel[feedback.effort] || 'Não informado'} (${effortNum}/5)
-- Energia: ${feedback.energy || 'Não informado'}/5
-- Sono: ${feedback.sleep || 'Não informado'}/5
-- Estresse: ${feedback.stress || 'Não informado'}/5
+- Energia: ${feedback.energy || 'Não informado'}/10
+- Sono: ${feedback.sleep || 'Não informado'}/10
+- Estresse: ${feedback.stress || 'Não informado'}/10
 - Dor muscular: ${feedback.pain || 0}/10
 ${feedback.notes ? `- Observações: ${feedback.notes}` : ''}`
 
@@ -114,9 +114,9 @@ ${feedback.notes ? `- Observações: ${feedback.notes}` : ''}`
 - Distância nadada: ${weekStats.swimDistance ? (weekStats.swimDistance / 1000).toFixed(2) + 'km' : '0km'}
 - Esforço médio: ${weekStats.avgEffort || 'não informado'}
 - Dor média: ${weekStats.avgPain || 0}/10
-- Energia média: ${weekStats.avgEnergy || 0}/5
-- Sono médio: ${weekStats.avgSleep || 0}/5
-- Estresse médio: ${weekStats.avgStress || 0}/5`
+- Energia média: ${weekStats.avgEnergy || 0}/10
+- Sono médio: ${weekStats.avgSleep || 0}/10
+- Estresse médio: ${weekStats.avgStress || 0}/10`
     }
 
     if (trends) {
