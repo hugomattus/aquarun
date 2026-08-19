@@ -1,4 +1,9 @@
-import { extractContent } from './groq'
+function extractContent(content) {
+  if (Array.isArray(content)) {
+    return content.map(part => (part && typeof part === 'object' ? part.text || '' : String(part))).join('')
+  }
+  return String(content || '')
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')

@@ -1,4 +1,54 @@
-import { callGroqJson } from './groq'
+const GROQ_BASE_URL = 'https://api.groq.com/openai/v1'
+
+function extractJsonContent(content) {
+  if (Array.isArray(content)) {
+    content = content.map(part => (part && typeof part === 'object' ? part.text || '' : String(part))).join('')
+  }
+  if (typeof content !== 'string') content = String(content || '')
+  return content
+}
+
+async function callGroqJson({ system, user, temperature = 0.6, maxTokens = 4000 }) {
+  let lastError = null
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const response = await fetch(`${GROQ_BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.VITE_GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'openai/gpt-oss-120b',
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: user },
+        ],
+        temperature,
+        max_tokens: maxTokens,
+      }),
+    })
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      return { status: response.status, error: err.error?.message || 'Groq API error' }
+    }
+
+    const data = await response.json()
+    const text = extractJsonContent(data.choices[0].message.content)
+    const match = text.replace(/```json|```/g, '').match(/\{[\s\S]*\}/)
+    if (match) {
+      try {
+        return { status: 200, data: JSON.parse(match[0]) }
+      } catch {
+        // retry below
+      }
+    }
+    lastError = { status: 500, error: 'A IA não retornou um plano válido. Tente novamente.' }
+  }
+
+  return lastError
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
