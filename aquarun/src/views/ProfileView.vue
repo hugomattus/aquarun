@@ -127,6 +127,7 @@ import { useWorkoutStore } from '../stores/workouts'
 import { supabase } from '../utils/supabase'
 
 const auth = useAuthStore()
+const workoutStore = useWorkoutStore()
 const fullName = ref('')
 const fcMax = ref(null)
 const loading = ref(false)
@@ -189,7 +190,7 @@ async function deletePlan() {
     if (err2) throw err2
 
     await auth.updateProfile({ current_week: 0 })
-    await workoutStore.loadWorkouts()
+    await workoutStore.fetchWorkouts()
     confirmDelete.value = false
     planDeleted.value = true
   } catch (e) {
