@@ -101,6 +101,21 @@
         </div>
       </div>
 
+      <div v-if="weekWorkouts.length === 0" class="bg-surface rounded p-8 border border-neutral-800 text-center">
+        <Icon name="calendar" :size="32" class="mx-auto text-neutral-600 mb-3" />
+        <h3 class="font-medium text-white mb-1">Nenhum treino nesta semana</h3>
+        <p class="text-sm text-neutral-500 mb-4">
+          {{ currentWeek > 1 ? 'Gere os treinos desta semana para retomar seu plano.' : 'Seu plano ainda não tem treinos planejados para esta semana.' }}
+        </p>
+        <button
+          @click="generateNextWeek"
+          :disabled="generating"
+          class="px-6 py-2.5 bg-primary hover:bg-primary-dark disabled:opacity-50 rounded font-medium transition-colors text-sm"
+        >
+          {{ generating ? 'Gerando...' : 'Gerar Treinos desta Semana' }}
+        </button>
+      </div>
+
       <div v-if="weekProgress.allDone" class="bg-surface rounded p-6 border border-neutral-800">
         <div class="text-center">
           <Icon name="check-circle" :size="32" class="mx-auto text-green-500 mb-3" />
@@ -714,8 +729,9 @@ async function generateNextWeek() {
     const startOfWeek = new Date(today)
     startOfWeek.setDate(today.getDate() - ((today.getDay() + 6) % 7))
 
-    const nextWeekNumber = currentWeek.value + 1
-    const weekOffset = (nextWeekNumber - 1) * 7
+    const calWeek = workoutStore.calendarWeekNumber()
+    const nextWeekNumber = Math.max(currentWeek.value + 1, calWeek || (currentWeek.value + 1))
+    const weekOffset = calWeek ? (nextWeekNumber - calWeek) * 7 : 7
 
     const dayNameToIndex = {
       domingo: 0, sunday: 0,

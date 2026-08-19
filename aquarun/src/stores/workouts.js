@@ -444,8 +444,6 @@ export const useWorkoutStore = defineStore('workouts', () => {
     if (calWeek === null) return
     const current = auth.profile?.current_week || 0
     if (current >= calWeek) return
-    const hasWorkouts = workouts.value.some(w => w.week_number === calWeek)
-    if (!hasWorkouts) return
     await auth.updateProfile({ current_week: calWeek })
   }
 
@@ -470,5 +468,6 @@ export const useWorkoutStore = defineStore('workouts', () => {
     getEnrichedProfile,
     markMissedWorkouts,
     syncCurrentWeek,
+    calendarWeekNumber,
   }
 })
