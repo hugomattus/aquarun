@@ -67,7 +67,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { Line, Bar } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -96,6 +96,10 @@ ChartJS.register(
 )
 
 const workoutStore = useWorkoutStore()
+
+onMounted(() => {
+  workoutStore.fetchWorkouts()
+})
 
 const weekSeries = computed(() => {
   const map = new Map()

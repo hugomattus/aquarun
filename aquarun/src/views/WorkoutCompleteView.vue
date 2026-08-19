@@ -422,11 +422,12 @@
 
             <button
               @click="completeWorkout"
-              :disabled="!feedback.effort"
+              :disabled="!feedback.effort || savingWorkout"
               class="w-full py-2.5 bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed rounded font-medium transition-colors text-sm"
             >
-              Concluir Treino
+              {{ savingWorkout ? 'Salvando...' : 'Concluir Treino' }}
             </button>
+            <p v-if="saveError" class="text-xs text-red-400 text-center">{{ saveError }}</p>
           </div>
         </div>
       </template>
@@ -484,6 +485,8 @@ const manualData = ref({
 const selectedActivity = ref(null)
 const aiFeedback = ref(null)
 const generatingFeedback = ref(false)
+const savingWorkout = ref(false)
+const saveError = ref('')
 
 const workout = computed(() =>
   workoutStore.workouts.find(w => w.id === route.params.id)
@@ -535,6 +538,10 @@ function selectActivity(activity) {
 async function completeWorkout() {
   if (!feedback.value.effort) return
 
+  savingWorkout.value = true
+  saveError.value = ''
+
+  try {
   if (selectedActivity.value) {
     const a = selectedActivity.value
     const pace = a.moving_time > 0 && a.distance > 0 ? (a.moving_time * 1000 / a.distance) : null
@@ -598,6 +605,18 @@ async function completeWorkout() {
 
   await workoutStore.completeWorkout(workout.value.id, selectedActivity.value?.id || null)
 
+  await workoutStore.fetchWorkouts()
+  if (strava.connected) {
+    await strava.fetchActivities()
+  }
+
+  } catch (e) {
+    saveError.value = e.message || 'Erro ao salvar o treino. Tente novamente.'
+    savingWorkout.value = false
+    return
+  }
+
+  savingWorkout.value = false
   generatingFeedback.value = true
   try {
     const isSwim = workout.value?.type === 'swim'

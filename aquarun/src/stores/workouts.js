@@ -47,10 +47,12 @@ export const useWorkoutStore = defineStore('workouts', () => {
   }
 
   async function completeWorkout(workoutId, activityId) {
-    await supabase
+    const { error } = await supabase
       .from('workouts')
       .update({ status: 'completed', completed_activity_id: activityId })
       .eq('id', workoutId)
+
+    if (error) throw error
 
     const idx = workouts.value.findIndex(w => w.id === workoutId)
     if (idx !== -1) {
@@ -79,23 +81,25 @@ export const useWorkoutStore = defineStore('workouts', () => {
       })
       .eq('id', workoutId)
 
-    if (!error) {
-      const idx = workouts.value.findIndex(w => w.id === workoutId)
-      if (idx !== -1) {
-        Object.assign(workouts.value[idx], {
-          actual_distance: performance.distance,
-          actual_duration: performance.duration,
-          actual_pace: performance.pace,
-          actual_heartrate: performance.heartrate,
-          actual_max_heartrate: performance.maxHeartrate,
-          actual_cadence: performance.cadence,
-          actual_elevation: performance.elevation,
-          actual_calories: performance.calories,
-          actual_moving_time: performance.movingTime,
-          actual_elapsed_time: performance.elapsedTime,
-          splits: performance.splits,
-        })
-      }
+    if (error) throw error
+
+    const idx = workouts.value.findIndex(w => w.id === workoutId)
+    if (idx !== -1) {
+      Object.assign(workouts.value[idx], {
+        actual_distance: performance.distance,
+        actual_duration: performance.duration,
+        actual_pace: performance.pace,
+        actual_heartrate: performance.heartrate,
+        actual_max_heartrate: performance.maxHeartrate,
+        actual_cadence: performance.cadence,
+        actual_elevation: performance.elevation,
+        actual_calories: performance.calories,
+        actual_strokes: performance.strokes,
+        actual_swolf: performance.swolf,
+        actual_moving_time: performance.movingTime,
+        actual_elapsed_time: performance.elapsedTime,
+        splits: performance.splits,
+      })
     }
   }
 
@@ -112,18 +116,18 @@ export const useWorkoutStore = defineStore('workouts', () => {
       })
       .eq('id', workoutId)
 
-    if (!error) {
-      const idx = workouts.value.findIndex(w => w.id === workoutId)
-      if (idx !== -1) {
-        Object.assign(workouts.value[idx], {
-          feedback_effort: feedback.effort,
-          feedback_pain: feedback.pain,
-          feedback_energy: feedback.energy,
-          feedback_sleep: feedback.sleep,
-          feedback_stress: feedback.stress,
-          feedback_notes: feedback.notes,
-        })
-      }
+    if (error) throw error
+
+    const idx = workouts.value.findIndex(w => w.id === workoutId)
+    if (idx !== -1) {
+      Object.assign(workouts.value[idx], {
+        feedback_effort: feedback.effort,
+        feedback_pain: feedback.pain,
+        feedback_energy: feedback.energy,
+        feedback_sleep: feedback.sleep,
+        feedback_stress: feedback.stress,
+        feedback_notes: feedback.notes,
+      })
     }
   }
 

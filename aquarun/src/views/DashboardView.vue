@@ -329,7 +329,7 @@
       <div class="space-y-2">
         <div
           v-for="activity in recentActivities"
-          :key="activity.id"
+          :key="activity.key"
           class="flex items-center gap-3 p-3 rounded bg-dark"
         >
           <Icon :name="activity.type === 'swim' ? 'droplet' : 'activity'" :size="18" :class="activity.type === 'swim' ? 'text-neutral-400' : 'text-primary'" />
@@ -348,7 +348,7 @@
       <Icon name="activity" :size="28" class="mx-auto mb-2 text-neutral-600" />
       <h3 class="text-sm font-medium text-white mb-1">Conecte o Strava</h3>
       <p class="text-sm text-neutral-500 mb-4">
-        Sincronize suas atividades para ver seu desempenho e deixar os treinos com dados reais.
+        Sincronize suas atividades para ver seu desempenho completo. Seus treinos concluídos manualmente também aparecem aqui.
       </p>
       <router-link
         to="/integrations"
@@ -427,23 +427,45 @@ const weeklyPlan = computed(() => {
     .sort((a, b) => a.scheduled_date.localeCompare(b.scheduled_date))
 })
 
-const recentActivities = computed(() => {
-  if (strava.connected && strava.activities.length > 0) {
-    return strava.activities.slice(0, 5).map(a => ({ ...a, type: a.type }))
-  }
-  return workoutStore.workouts
-    .filter(w => w.status === 'completed' && w.actual_distance)
-    .sort((a, b) => b.scheduled_date.localeCompare(a.scheduled_date))
-    .slice(0, 5)
+const allActivities = computed(() => {
+  const workouts = workoutStore.workouts
+    .filter(w => w.status === 'completed' && w.actual_distance > 0)
     .map(w => ({
-      id: w.id,
+      key: 'w' + w.id,
+      type: w.type,
       name: w.name,
       distance: w.actual_distance,
       moving_time: w.actual_duration || w.actual_moving_time || 0,
       start_date: w.scheduled_date,
-      type: w.type,
     }))
+
+  const covered = new Set(workouts.map(a => `${a.type}|${(a.start_date || '').slice(0, 10)}`))
+  const stravaItems = strava.connected
+    ? strava.activities
+        .filter(a => {
+          const type = a.type === 'Swim' || a.type === 'OpenWaterSwim' ? 'swim' : 'run'
+          const date = (a.start_date || '').slice(0, 10)
+          return !covered.has(`${type}|${date}`)
+        })
+        .map(a => ({
+          key: 's' + (a.id ?? a.strava_id),
+          type: a.type === 'Swim' || a.type === 'OpenWaterSwim' ? 'swim' : 'run',
+          name: a.name,
+          distance: a.distance,
+          moving_time: a.moving_time || 0,
+          start_date: a.start_date,
+        }))
+    : []
+
+  return [...workouts, ...stravaItems]
 })
+
+const recentActivities = computed(() =>
+  allActivities.value
+    .slice()
+    .sort((a, b) => b.start_date.localeCompare(a.start_date))
+    .slice(0, 5)
+)
 
 const weekRange = computed(() => {
   const now = new Date()
@@ -462,23 +484,13 @@ function isThisWeek(dateStr) {
   return d >= weekRange.value.monday && d <= weekRange.value.sunday
 }
 
-const sourceRuns = computed(() => {
-  if (strava.connected && strava.activities.length > 0) {
-    return strava.runActivities.map(a => ({ start_date: a.start_date, distance: a.distance, moving_time: a.moving_time }))
-  }
-  return workoutStore.workouts
-    .filter(w => w.type === 'run' && w.status === 'completed' && w.actual_distance > 0)
-    .map(w => ({ start_date: w.scheduled_date, distance: w.actual_distance, moving_time: w.actual_duration || w.actual_moving_time || 0 }))
-})
+const sourceRuns = computed(() =>
+  allActivities.value.filter(a => a.type === 'run')
+)
 
-const sourceSwims = computed(() => {
-  if (strava.connected && strava.activities.length > 0) {
-    return strava.swimActivities.map(a => ({ start_date: a.start_date, distance: a.distance, moving_time: a.moving_time }))
-  }
-  return workoutStore.workouts
-    .filter(w => w.type === 'swim' && w.status === 'completed' && w.actual_distance > 0)
-    .map(w => ({ start_date: w.scheduled_date, distance: w.actual_distance, moving_time: w.actual_duration || w.actual_moving_time || 0 }))
-})
+const sourceSwims = computed(() =>
+  allActivities.value.filter(a => a.type === 'swim')
+)
 
 const streak = computed(() => {
   const dates = new Set(
