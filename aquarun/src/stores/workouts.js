@@ -428,6 +428,27 @@ export const useWorkoutStore = defineStore('workouts', () => {
     }
   }
 
+  function calendarWeekNumber() {
+    const startDate = authStore.profile?.start_date
+    if (!startDate) return null
+    const start = new Date(startDate + 'T00:00:00')
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const diffDays = Math.floor((today - start) / 86400000)
+    return Math.floor(diffDays / 7) + 1
+  }
+
+  async function syncCurrentWeek() {
+    if (!authStore.user || !authStore.profile?.start_date) return
+    const calWeek = calendarWeekNumber()
+    if (calWeek === null) return
+    const current = authStore.profile?.current_week || 0
+    if (current >= calWeek) return
+    const hasWorkouts = workouts.value.some(w => w.week_number === calWeek)
+    if (!hasWorkouts) return
+    await authStore.updateProfile({ current_week: calWeek })
+  }
+
   return {
     workouts,
     loading,
@@ -448,5 +469,6 @@ export const useWorkoutStore = defineStore('workouts', () => {
     estimateVO2Max,
     getEnrichedProfile,
     markMissedWorkouts,
+    syncCurrentWeek,
   }
 })

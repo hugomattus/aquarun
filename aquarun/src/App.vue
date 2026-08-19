@@ -24,12 +24,14 @@
 import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from './stores/auth'
+import { useWorkoutStore } from './stores/workouts'
 import AppSidebar from './components/layout/AppSidebar.vue'
 import AppBottomNav from './components/layout/AppBottomNav.vue'
 import AppHeader from './components/layout/AppHeader.vue'
 
 const route = useRoute()
 const auth = useAuthStore()
+const workoutStore = useWorkoutStore()
 
 const standaloneRoutes = ['/onboarding', '/strava-connect', '/generating-plan', '/login', '/reset-password']
 
@@ -40,5 +42,12 @@ const showLayout = computed(() => {
   return true
 })
 
-onMounted(() => auth.init())
+onMounted(async () => {
+  await auth.init()
+  if (auth.user && auth.profile?.onboarding_completed) {
+    await workoutStore.fetchWorkouts()
+    await workoutStore.markMissedWorkouts()
+    await workoutStore.syncCurrentWeek()
+  }
+})
 </script>

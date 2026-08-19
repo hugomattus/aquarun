@@ -10,74 +10,74 @@
       </div>
     </div>
 
-    <div v-if="todayWorkout && todayWorkout.status === 'planned'" class="bg-gradient-to-r from-primary/20 to-primary/5 rounded-lg p-5 border border-primary/20">
+    <div v-if="displayWorkout && displayWorkout.status === 'planned'" class="bg-gradient-to-r from-primary/20 to-primary/5 rounded-lg p-5 border border-primary/20">
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center gap-2">
           <Icon
-            :name="todayWorkout.type === 'swim' ? 'droplet' : 'activity'"
+            :name="displayWorkout.type === 'swim' ? 'droplet' : 'activity'"
             :size="18"
             class="text-primary"
           />
-          <h3 class="text-sm font-medium text-primary uppercase tracking-wide">Treino de Hoje</h3>
+          <h3 class="text-sm font-medium text-primary uppercase tracking-wide">{{ bannerTitle }}</h3>
         </div>
-        <span class="text-xs text-neutral-500">{{ formatDateFull(todayWorkout.scheduled_date) }}</span>
+        <span class="text-xs text-neutral-500">{{ formatDateFull(displayWorkout.scheduled_date) }}</span>
       </div>
       <div class="mb-3">
-        <div class="text-lg font-medium text-white">{{ todayWorkout.name }}</div>
-        <div class="text-sm text-neutral-400">{{ todayWorkout.duration }}min</div>
+        <div class="text-lg font-medium text-white">{{ displayWorkout.name }}</div>
+        <div class="text-sm text-neutral-400">{{ displayWorkout.duration }}min</div>
       </div>
-      <div v-if="todayWorkout.description" class="text-sm text-neutral-400 mb-4">
-        {{ todayWorkout.description }}
+      <div v-if="displayWorkout.description" class="text-sm text-neutral-400 mb-4">
+        {{ displayWorkout.description }}
       </div>
 
-      <div v-if="showDetails && todayWorkout.structure" class="mb-4 space-y-3">
-        <div v-if="todayWorkout.structure.objective" class="bg-dark/50 rounded p-3">
+      <div v-if="showDetails && displayWorkout.structure" class="mb-4 space-y-3">
+        <div v-if="displayWorkout.structure.objective" class="bg-dark/50 rounded p-3">
           <div class="flex items-center gap-2 mb-1">
             <Icon name="target" :size="14" class="text-primary" />
             <span class="text-xs font-medium text-white">Objetivo</span>
           </div>
-          <p class="text-sm text-neutral-400">{{ todayWorkout.structure.objective }}</p>
+          <p class="text-sm text-neutral-400">{{ displayWorkout.structure.objective }}</p>
         </div>
-        <div v-if="todayWorkout.structure.warmup" class="bg-dark/50 rounded p-3">
+        <div v-if="displayWorkout.structure.warmup" class="bg-dark/50 rounded p-3">
           <div class="flex items-center gap-2 mb-1">
             <Icon name="thermometer" :size="14" class="text-yellow-500" />
             <span class="text-xs font-medium text-white">Aquecimento</span>
           </div>
-          <p class="text-sm text-neutral-400 whitespace-pre-line">{{ todayWorkout.structure.warmup }}</p>
+          <p class="text-sm text-neutral-400 whitespace-pre-line">{{ displayWorkout.structure.warmup }}</p>
         </div>
-        <div v-if="todayWorkout.structure.main_part" class="bg-dark/50 rounded p-3">
+        <div v-if="displayWorkout.structure.main_part" class="bg-dark/50 rounded p-3">
           <div class="flex items-center gap-2 mb-1">
             <Icon name="star" :size="14" class="text-primary" />
             <span class="text-xs font-medium text-white">Parte Principal</span>
           </div>
-          <p class="text-sm text-neutral-400 whitespace-pre-line">{{ todayWorkout.structure.main_part }}</p>
+          <p class="text-sm text-neutral-400 whitespace-pre-line">{{ displayWorkout.structure.main_part }}</p>
         </div>
-        <div v-if="todayWorkout.structure.cooldown" class="bg-dark/50 rounded p-3">
+        <div v-if="displayWorkout.structure.cooldown" class="bg-dark/50 rounded p-3">
           <div class="flex items-center gap-2 mb-1">
             <Icon name="sun" :size="14" class="text-blue-500" />
             <span class="text-xs font-medium text-white">Desaquecimento</span>
           </div>
-          <p class="text-sm text-neutral-400 whitespace-pre-line">{{ todayWorkout.structure.cooldown }}</p>
+          <p class="text-sm text-neutral-400 whitespace-pre-line">{{ displayWorkout.structure.cooldown }}</p>
         </div>
-        <div v-if="todayWorkout.structure.drills && todayWorkout.structure.drills.length" class="bg-dark/50 rounded p-3">
+        <div v-if="displayWorkout.structure.drills && displayWorkout.structure.drills.length" class="bg-dark/50 rounded p-3">
           <div class="flex items-center gap-2 mb-1">
             <Icon name="book-open" :size="14" class="text-green-400" />
             <span class="text-xs font-medium text-white">Educativos</span>
           </div>
           <ul class="space-y-1">
-            <li v-for="(drill, i) in todayWorkout.structure.drills" :key="i" class="text-sm text-neutral-400 flex items-start gap-2">
+            <li v-for="(drill, i) in displayWorkout.structure.drills" :key="i" class="text-sm text-neutral-400 flex items-start gap-2">
               <span class="text-neutral-600">•</span>
               <span>{{ drill }}</span>
             </li>
           </ul>
         </div>
-        <div v-if="todayWorkout.structure.attention_points && todayWorkout.structure.attention_points.length" class="bg-dark/50 rounded p-3">
+        <div v-if="displayWorkout.structure.attention_points && displayWorkout.structure.attention_points.length" class="bg-dark/50 rounded p-3">
           <div class="flex items-center gap-2 mb-1">
             <Icon name="eye" :size="14" class="text-purple-400" />
             <span class="text-xs font-medium text-white">Pontos de Atenção</span>
           </div>
           <ul class="space-y-1">
-            <li v-for="(point, i) in todayWorkout.structure.attention_points" :key="i" class="text-sm text-neutral-400 flex items-start gap-2">
+            <li v-for="(point, i) in displayWorkout.structure.attention_points" :key="i" class="text-sm text-neutral-400 flex items-start gap-2">
               <span class="text-neutral-600">•</span>
               <span>{{ point }}</span>
             </li>
@@ -93,7 +93,7 @@
           {{ showDetails ? 'Fechar' : 'Ver Detalhes' }}
         </button>
         <router-link
-          :to="`/workout/${todayWorkout.id}`"
+          :to="`/workout/${displayWorkout.id}`"
           class="flex-1 py-2.5 bg-primary hover:bg-primary-dark rounded text-sm font-medium transition-colors text-center"
         >
           Concluir Treino
@@ -111,7 +111,7 @@
       </div>
     </div>
 
-    <div v-if="nextWorkout" class="bg-surface rounded-lg p-5 border border-neutral-800">
+    <div v-if="nextWorkout && todayWorkout && todayWorkout.status === 'planned'" class="bg-surface rounded-lg p-5 border border-neutral-800">
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center gap-2">
           <Icon name="arrow-right" :size="16" class="text-neutral-400" />
@@ -406,6 +406,15 @@ const nextWorkout = computed(() => {
     .sort((a, b) => a.scheduled_date.localeCompare(b.scheduled_date))
     [0] || null
 })
+
+const displayWorkout = computed(() => {
+  if (todayWorkout.value && todayWorkout.value.status === 'planned') return todayWorkout.value
+  return nextWorkout.value
+})
+
+const bannerTitle = computed(() =>
+  todayWorkout.value && todayWorkout.value.status === 'planned' ? 'Treino de Hoje' : 'Próximo Treino'
+)
 
 const weeklyPlan = computed(() => {
   const now = new Date()
