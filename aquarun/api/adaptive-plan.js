@@ -1,3 +1,5 @@
+import { callGroqJson } from './groq'
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
@@ -5,8 +7,6 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
-
-  const GROQ_BASE_URL = 'https://api.groq.com/openai/v1'
 
   try {
     const { profile, previousWeek, previousWeeks, trends, recentWorkouts, weekNumber } = req.body
@@ -237,38 +237,12 @@ INSTRUÇÕES:
 
 Retorne APENAS o JSON, sem markdown, sem código.`
 
-    const response = await fetch(`${GROQ_BASE_URL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.VITE_GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'openai/gpt-oss-120b',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 0.6,
-        max_tokens: 4000,
-      }),
-    })
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}))
-      return res.status(response.status).json({ error: err.error?.message || 'Groq API error' })
+    const result = await callGroqJson({ system: systemPrompt, user: userPrompt, temperature: 0.6, maxTokens: 4000 })
+    if (result.status !== 200) {
+      return res.status(result.status).json({ error: result.error })
     }
 
-    const data = await response.json()
-    const text = data.choices[0].message.content
-
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (jsonMatch) {
-      const plan = JSON.parse(jsonMatch[0])
-      return res.status(200).json(plan)
-    }
-
-    return res.status(500).json({ error: 'Não foi possível gerar o plano' })
+    return res.status(200).json(result.data)
   } catch (error) {
     return res.status(500).json({ error: error.message })
   }

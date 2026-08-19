@@ -1,3 +1,5 @@
+import { extractContent } from './groq'
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
@@ -157,12 +159,23 @@ ${feedback.notes ? `- Observações: ${feedback.notes}` : ''}`
     }
 
     const data = await response.json()
-    const content = data.choices[0].message.content
+    const content = extractContent(data.choices[0].message.content)
 
     let parsed
     try {
       parsed = JSON.parse(content)
     } catch {
+      const match = content.match(/\{[\s\S]*\}/)
+      if (match) {
+        try {
+          parsed = JSON.parse(match[0])
+        } catch {
+          parsed = null
+        }
+      }
+    }
+
+    if (!parsed || typeof parsed !== 'object' || !parsed.summary) {
       parsed = {
         summary: content.slice(0, 300),
         positive: ['Treino concluído com sucesso'],

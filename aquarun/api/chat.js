@@ -1,3 +1,5 @@
+import { extractContent } from './groq'
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
@@ -182,7 +184,7 @@ O atleta tem em média 40 a 60 minutos por dia para treinar. Nunca sugira treino
     }
 
     const data = await response.json()
-    return res.status(200).json({ reply: data.choices[0].message.content })
+    return res.status(200).json({ reply: extractContent(data.choices[0].message.content) })
   } catch (error) {
     return res.status(500).json({ error: error.message })
   }
