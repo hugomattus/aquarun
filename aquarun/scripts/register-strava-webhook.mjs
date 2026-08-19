@@ -15,7 +15,7 @@ try {
 
 const clientId = env.VITE_STRAVA_CLIENT_ID
 const clientSecret = env.VITE_STRAVA_CLIENT_SECRET
-const callbackUrl = process.env.STRAVA_CALLBACK_URL || 'https://aquarun.vercel.app/api/strava-webhook'
+const callbackUrl = process.env.STRAVA_CALLBACK_URL || 'https://aquarun-omega.vercel.app/api/strava-webhook'
 const verifyToken = process.env.STRAVA_WEBHOOK_VERIFY_TOKEN || 'aquarun-verify'
 
 if (!clientId || !clientSecret) {
