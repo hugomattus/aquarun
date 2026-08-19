@@ -411,6 +411,23 @@ export const useWorkoutStore = defineStore('workouts', () => {
     return enriched
   }
 
+  async function markMissedWorkouts() {
+    if (!authStore.user) return
+    const today = new Date().toLocaleDateString('sv-SE')
+    const missed = workouts.value.filter(w =>
+      w.status === 'planned' && w.scheduled_date && w.scheduled_date < today
+    )
+    if (!missed.length) return
+    const { error } = await supabase
+      .from('workouts')
+      .update({ status: 'missed' })
+      .eq('user_id', authStore.user.id)
+      .in('id', missed.map(w => w.id))
+    if (!error) {
+      missed.forEach(w => (w.status = 'missed'))
+    }
+  }
+
   return {
     workouts,
     loading,
@@ -430,5 +447,6 @@ export const useWorkoutStore = defineStore('workouts', () => {
     estimateFcMax,
     estimateVO2Max,
     getEnrichedProfile,
+    markMissedWorkouts,
   }
 })

@@ -57,11 +57,15 @@ const faqs = [
   },
   {
     question: 'Como gerar um plano de treino?',
-    answer: 'Acesse a seção Coach IA e solicite um plano de treino personalizado. O Coach irá perguntar sobre seu nível, objetivo e disponibilidade para criar um plano sob medida.',
+    answer: 'Acesse Meu Treino e clique em "Gerar Meu Plano". O AquaRun pede seu nível, objetivo e disponibilidade e cria um plano semanal de corrida e natação ajustado a cada semana.',
+  },
+  {
+    question: 'Como registrar um treino concluído?',
+    answer: 'No Meu Treino, abra o treino do dia e clique em "Concluir". Você pode registrar os dados manualmente ou selecionar uma atividade sincronizada do Strava, além de avaliar esforço, sono, energia e estresse.',
   },
   {
     question: 'Posso usar o app offline?',
-    answer: 'O AquaRun é um app web que precisa de conexão para funcionar completamente. No entanto, planos de treino já carregados podem ser consultados offline.',
+    answer: 'O AquaRun é um app web e precisa de conexão com a internet para funcionar, incluindo o acesso aos seus planos de treino.',
   },
   {
     question: 'Como alterar minha senha?',

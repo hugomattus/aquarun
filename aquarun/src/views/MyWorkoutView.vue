@@ -85,6 +85,12 @@
               Concluído
             </span>
             <span
+              v-else-if="workout.status === 'missed'"
+              class="text-xs text-neutral-500"
+            >
+              Não feito
+            </span>
+            <span
               v-else-if="workout.status === 'skipped'"
               class="text-xs text-neutral-500"
             >

@@ -240,6 +240,8 @@
             <div class="text-sm text-white truncate">{{ workout.name }}</div>
           </div>
           <div v-if="workout.status === 'completed'" class="text-xs text-green-500">OK</div>
+          <div v-else-if="workout.status === 'missed'" class="text-xs text-neutral-500">Não feito</div>
+          <div v-else-if="workout.status === 'skipped'" class="text-xs text-neutral-500">Pulado</div>
           <div v-else class="text-xs text-neutral-600">{{ dayShort(workout.scheduled_date) }}</div>
         </router-link>
       </div>
@@ -268,15 +270,15 @@
         </div>
         <div class="space-y-3">
           <div>
-            <div class="text-[10px] text-neutral-500 mb-1">Distância (km)</div>
+            <div class="text-[10px] text-neutral-500 mb-1">Distância ({{ distUnit }})</div>
             <div class="h-20">
-              <Line :data="runDistanceChartData" :options="chartOptions('km')" />
+              <Line :data="runDistanceChartData" :options="chartOptions(distUnit)" />
             </div>
           </div>
           <div>
-            <div class="text-[10px] text-neutral-500 mb-1">Ritmo (min/km)</div>
+            <div class="text-[10px] text-neutral-500 mb-1">Ritmo ({{ paceUnit }})</div>
             <div class="h-20">
-              <Line :data="runPaceChartData" :options="chartOptions('min/km', true)" />
+              <Line :data="runPaceChartData" :options="chartOptions(paceUnit, true)" />
             </div>
           </div>
         </div>
@@ -341,6 +343,20 @@
         </div>
       </div>
     </div>
+
+    <div v-else class="bg-surface rounded p-6 border border-neutral-800 text-center">
+      <Icon name="activity" :size="28" class="mx-auto mb-2 text-neutral-600" />
+      <h3 class="text-sm font-medium text-white mb-1">Conecte o Strava</h3>
+      <p class="text-sm text-neutral-500 mb-4">
+        Sincronize suas atividades para ver seu desempenho e deixar os treinos com dados reais.
+      </p>
+      <router-link
+        to="/integrations"
+        class="inline-block px-4 py-2 rounded bg-primary text-white text-sm font-medium hover:opacity-90"
+      >
+        Conectar
+      </router-link>
+    </div>
   </div>
 </template>
 
@@ -349,7 +365,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useStravaStore } from '../stores/strava'
 import { useWorkoutStore } from '../stores/workouts'
 import { useAuthStore } from '../stores/auth'
-import { formatDistance, formatDuration, formatDate, formatDateFull } from '../utils/formatters'
+import { formatDistance, formatDuration, formatDate, formatDateFull, formatPace, getUnitSystem } from '../utils/formatters'
 import Icon from '../components/Icon.vue'
 import { Line } from 'vue-chartjs'
 import {
@@ -406,7 +422,23 @@ const weeklyPlan = computed(() => {
     .sort((a, b) => a.scheduled_date.localeCompare(b.scheduled_date))
 })
 
-const recentActivities = computed(() => strava.activities.slice(0, 5))
+const recentActivities = computed(() => {
+  if (strava.connected && strava.activities.length > 0) {
+    return strava.activities.slice(0, 5).map(a => ({ ...a, type: a.type }))
+  }
+  return workoutStore.workouts
+    .filter(w => w.status === 'completed' && w.actual_distance)
+    .sort((a, b) => b.scheduled_date.localeCompare(a.scheduled_date))
+    .slice(0, 5)
+    .map(w => ({
+      id: w.id,
+      name: w.name,
+      distance: w.actual_distance,
+      moving_time: w.actual_duration || w.actual_moving_time || 0,
+      start_date: w.scheduled_date,
+      type: w.type,
+    }))
+})
 
 const weekRange = computed(() => {
   const now = new Date()
@@ -421,41 +453,82 @@ const weekRange = computed(() => {
 })
 
 function isThisWeek(dateStr) {
-  const d = new Date(dateStr)
+  const d = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T00:00:00')
   return d >= weekRange.value.monday && d <= weekRange.value.sunday
 }
 
+const sourceRuns = computed(() => {
+  if (strava.connected && strava.activities.length > 0) {
+    return strava.runActivities.map(a => ({ start_date: a.start_date, distance: a.distance, moving_time: a.moving_time }))
+  }
+  return workoutStore.workouts
+    .filter(w => w.type === 'run' && w.status === 'completed' && w.actual_distance > 0)
+    .map(w => ({ start_date: w.scheduled_date, distance: w.actual_distance, moving_time: w.actual_duration || w.actual_moving_time || 0 }))
+})
+
+const sourceSwims = computed(() => {
+  if (strava.connected && strava.activities.length > 0) {
+    return strava.swimActivities.map(a => ({ start_date: a.start_date, distance: a.distance, moving_time: a.moving_time }))
+  }
+  return workoutStore.workouts
+    .filter(w => w.type === 'swim' && w.status === 'completed' && w.actual_distance > 0)
+    .map(w => ({ start_date: w.scheduled_date, distance: w.actual_distance, moving_time: w.actual_duration || w.actual_moving_time || 0 }))
+})
+
+const streak = computed(() => {
+  const dates = new Set(
+    workoutStore.workouts
+      .filter(w => w.status === 'completed' && w.actual_distance > 0)
+      .map(w => w.scheduled_date)
+  )
+  let count = 0
+  const d = new Date()
+  while (dates.has(d.toLocaleDateString('sv-SE'))) {
+    count++
+    d.setDate(d.getDate() - 1)
+  }
+  return count
+})
+
 const stats = computed(() => {
-  const weekRuns = strava.runActivities.filter(a => isThisWeek(a.start_date))
-  const weekSwims = strava.swimActivities.filter(a => isThisWeek(a.start_date) && a.moving_time >= 600)
+  const weekRuns = sourceRuns.value.filter(a => isThisWeek(a.start_date))
+  const weekSwims = sourceSwims.value.filter(a => isThisWeek(a.start_date) && a.moving_time >= 600)
 
   const totalRunDistance = weekRuns.reduce((sum, a) => sum + (a.distance || 0), 0)
   const totalSwimDistance = weekSwims.reduce((sum, a) => sum + (a.distance || 0), 0)
   const totalRunTime = weekRuns.reduce((sum, a) => sum + (a.moving_time || 0), 0)
   const totalSwimTime = weekSwims.reduce((sum, a) => sum + (a.moving_time || 0), 0)
 
-  return [
+  const cards = [
     { icon: 'activity', label: 'Corrida Semana', value: formatDistance(totalRunDistance), type: 'run' },
     { icon: 'droplet', label: 'Natação Semana', value: formatDistance(totalSwimDistance), type: 'swim' },
     { icon: 'clock', label: 'Tempo Correndo', value: formatDuration(totalRunTime), type: 'run' },
     { icon: 'clock', label: 'Tempo Nadando', value: formatDuration(totalSwimTime), type: 'swim' },
   ]
+  if (streak.value > 0) {
+    cards.push({ icon: 'target', label: 'Dias seguidos de treino', value: `${streak.value} dias`, type: 'both' })
+  }
+  return cards
 })
 
+const distUnit = computed(() => (getUnitSystem() === 'mi' ? 'mi' : 'km'))
+const paceUnit = computed(() => (getUnitSystem() === 'mi' ? 'min/mi' : 'min/km'))
+
 const runChartData = computed(() => {
-  const runs = strava.runActivities
+  const runs = sourceRuns.value
     .filter(a => a.distance > 0 && isThisWeek(a.start_date))
     .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
 
+  const unitMeters = getUnitSystem() === 'mi' ? 1609.34 : 1000
   return {
     labels: runs.map(a => {
-      const d = new Date(a.start_date)
+      const d = new Date(a.start_date.includes('T') ? a.start_date : a.start_date + 'T00:00:00')
       return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
     }),
-    distances: runs.map(a => +(a.distance / 1000).toFixed(2)),
+    distances: runs.map(a => +(a.distance / unitMeters).toFixed(2)),
     paces: runs.map(a => {
       if (!a.moving_time || !a.distance) return 0
-      const paceSeconds = a.moving_time / (a.distance / 1000)
+      const paceSeconds = a.moving_time / (a.distance / unitMeters)
       return +(paceSeconds / 60).toFixed(2)
     }),
   }
@@ -466,11 +539,10 @@ const runSummary = computed(() => {
   const paces = runChartData.value.paces.filter(p => p > 0)
   const totalDist = distances.reduce((s, d) => s + d, 0)
   const avgPaceVal = paces.length > 0 ? paces.reduce((s, p) => s + p, 0) / paces.length : 0
-  const paceMin = Math.floor(avgPaceVal)
-  const paceSec = Math.round((avgPaceVal - paceMin) * 60)
+  const avgMps = avgPaceVal > 0 ? 1000 / (avgPaceVal * 60) : 0
   return {
-    totalDistance: totalDist.toFixed(1) + ' km',
-    avgPace: paceMin + ':' + paceSec.toString().padStart(2, '0') + '/km',
+    totalDistance: totalDist.toFixed(1) + ' ' + distUnit.value,
+    avgPace: formatPace(avgMps),
     totalRuns: distances.length,
   }
 })
@@ -504,13 +576,13 @@ const runPaceChartData = computed(() => ({
 }))
 
 const swimChartData = computed(() => {
-  const swims = strava.swimActivities
+  const swims = sourceSwims.value
     .filter(a => a.distance > 0 && isThisWeek(a.start_date) && a.moving_time >= 600)
     .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
 
   return {
     labels: swims.map(a => {
-      const d = new Date(a.start_date)
+      const d = new Date(a.start_date.includes('T') ? a.start_date : a.start_date + 'T00:00:00')
       return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
     }),
     distances: swims.map(a => +a.distance.toFixed(0)),
@@ -526,14 +598,20 @@ const swimSummary = computed(() => {
   const distances = swimChartData.value.distances
   const paces = swimChartData.value.paces.filter(p => p > 0)
   const totalDist = distances.reduce((s, d) => s + d, 0)
-  const avgPaceVal = paces.length > 0 ? paces.reduce((s, p) => s + p, 0) / paces.length : 0
-  const paceMin = Math.floor(avgPaceVal)
-  const paceSec = Math.round((avgPaceVal - paceMin) * 60)
   return {
     totalDistance: totalDist + ' m',
-    avgPace: paceMin + ':' + paceSec.toString().padStart(2, '0') + '/100m',
+    avgPace: swimSummaryPace.value,
     totalSwims: distances.length,
   }
+})
+
+const swimSummaryPace = computed(() => {
+  const paces = swimChartData.value.paces.filter(p => p > 0)
+  if (!paces.length) return '--'
+  const avgPaceVal = paces.reduce((s, p) => s + p, 0) / paces.length
+  const paceMin = Math.floor(avgPaceVal)
+  const paceSec = Math.round((avgPaceVal - paceMin) * 60)
+  return paceMin + ':' + paceSec.toString().padStart(2, '0') + '/100m'
 })
 
 const swimDistanceChartData = computed(() => ({
@@ -580,7 +658,7 @@ function chartOptions(unit, invertY = false) {
         callbacks: {
           label: (ctx) => {
             const val = ctx.parsed.y
-            if (unit === 'min/km' || unit === 'min/100m') {
+            if (unit === 'min/km' || unit === 'min/100m' || unit === 'min/mi') {
               const min = Math.floor(val)
               const sec = Math.round((val - min) * 60)
               return min + ':' + sec.toString().padStart(2, '0') + ' ' + unit
@@ -626,6 +704,7 @@ function formatDayName(dateStr) {
 
 onMounted(async () => {
   await workoutStore.fetchWorkouts()
+  await workoutStore.markMissedWorkouts()
   await strava.checkConnection()
   if (strava.connected) {
     await strava.fetchActivities()

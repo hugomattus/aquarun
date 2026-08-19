@@ -1,3 +1,13 @@
+let unitSystem = 'km'
+
+export function setUnitSystem(unit) {
+  unitSystem = unit === 'mi' ? 'mi' : 'km'
+}
+
+export function getUnitSystem() {
+  return unitSystem
+}
+
 export function formatDuration(seconds) {
   const h = Math.floor(seconds / 3600)
   const m = Math.floor((seconds % 3600) / 60)
@@ -7,6 +17,10 @@ export function formatDuration(seconds) {
 }
 
 export function formatDistance(meters) {
+  if (!meters && meters !== 0) return '--'
+  if (unitSystem === 'mi') {
+    return `${(meters * 0.000621371).toFixed(2)} mi`
+  }
   if (meters >= 1000) {
     return `${(meters / 1000).toFixed(2)} km`
   }
@@ -15,10 +29,12 @@ export function formatDistance(meters) {
 
 export function formatPace(metersPerSecond) {
   if (!metersPerSecond) return '--'
-  const totalSeconds = 1000 / metersPerSecond
+  const unitMeters = unitSystem === 'mi' ? 1609.34 : 1000
+  const unitLabel = unitSystem === 'mi' ? ' /mi' : ' /km'
+  const totalSeconds = unitMeters / metersPerSecond
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = Math.floor(totalSeconds % 60)
-  return `${minutes}:${seconds.toString().padStart(2, '0')} /km`
+  return `${minutes}:${seconds.toString().padStart(2, '0')}${unitLabel}`
 }
 
 export function formatSwimPace(metersPerSecond) {

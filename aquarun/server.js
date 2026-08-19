@@ -25,7 +25,7 @@ const routes = [
   ['/api/adaptive-plan', adaptivePlan],
   ['/api/workout-feedback', workoutFeedback],
   ['/api/strava', stravaHandler],
-  ['/api/strava/refresh', stravaRefreshHandler],
+  ['/api/strava-refresh', stravaRefreshHandler],
 ]
 
 for (const [path, handler] of routes) {

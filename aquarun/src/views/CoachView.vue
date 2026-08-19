@@ -88,7 +88,7 @@
 
 <script setup>
 import { ref, nextTick, computed, onMounted } from 'vue'
-import { getAIResponse } from '../utils/gemini'
+import { getAIResponse } from '../utils/ai'
 import { useAuthStore } from '../stores/auth'
 import { useWorkoutStore } from '../stores/workouts'
 import { useStravaStore } from '../stores/strava'
